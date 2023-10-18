@@ -154,7 +154,66 @@ fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> {
     Ok(functions)
 }
 
+fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
+    let dos_headers: *const IMAGE_DOS_HEADER;
+    let nt_headers: *const IMAGE_NT_HEADERS64;
+    let optional_header: * const IMAGE_OPTIONAL_HEADER64;
+    let data_directory: *const IMAGE_DATA_DIRECTORY;
+    let export_directory: *const IMAGE_EXPORT_DIRECTORY;
+    let mut function_address_array: UINT_PTR;
+    let mut function_name_array: UINT_PTR;
+    let mut function_ordinals_array: UINT_PTR;
+    
+    unsafe {
+        dos_headers = module_handle as *const IMAGE_DOS_HEADER;
+        if (*dos_headers).e_magic != IMAGE_DOS_SIGNATURE {
+            debug_error!("Invalid dos signature!");
+        }
+
+        nt_headers = (module_handle as u64 + (*dos_headers).e_lfanew as u64) as *const IMAGE_NT_HEADERS64;
+        if (*nt_headers).Signature != IMAGE_NT_SIGNATURE {
+            debug_error!("Invalid NT signature!");
+        }
+
+        optional_header	= &(*nt_headers).OptionalHeader;
+        if (*optional_header).Magic != IMAGE_NT_OPTIONAL_HDR64_MAGIC {
+            debug_error!("Invalid Optional Header signature!");
+        }
+
+        data_directory = (&(*optional_header).DataDirectory[0]) as *const IMAGE_DATA_DIRECTORY;
+        export_directory = (module_handle as u64 + (*data_directory).VirtualAddress as u64) as *const IMAGE_EXPORT_DIRECTORY;
+        function_address_array = (module_handle as u64 + (*export_directory).AddressOfFunctions as u64) as UINT_PTR;
+        function_name_array = (module_handle as u64 + (*export_directory).AddressOfNames as u64) as UINT_PTR;
+        function_ordinals_array = (module_handle as u64 + (*export_directory).AddressOfNameOrdinals as u64) as UINT_PTR;
+        
+        //debug_info!((*export_directory).NumberOfFunctions);
+        for _ in 1..(*export_directory).NumberOfFunctions {
+            let name_offest: u32 = *(function_name_array as *const u32);
+
+            let fun_name = std::ffi::CStr::from_ptr(
+                (module_handle as u64 + name_offest as u64) as *const i8
+            ).to_str().unwrap();
+            
+            let fun_ord = *(function_ordinals_array as *const u16);
+            let address_ptr = function_address_array + fun_ord as u64 * (std::mem::size_of::<u32>() as u64);
+            let fun_addr = module_handle as u64 + *(address_ptr as *const u32) as u64;
+            //debug_info!(fun_name);
+            //debug_info!(fun_ord);
+            //debug_info!(fun_addr); 
+
+            if fun_name.to_lowercase() == function_name.to_lowercase() {
+                return fun_addr;
+            }
+
+            function_name_array = function_name_array + std::mem::size_of::<u32>() as u64;
+            function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as u64;
+        }
+        return 0;
+    }
+}
+
 fn main() {
+    //Exemple 1 : List all dlls and all functions of the current process
     // let dlls = get_loaded_dlls();
 
     // debug_info_msg!("List of loaded dlls in current Process : ");
@@ -174,19 +233,29 @@ fn main() {
     //         debug_ok_msg!(format!("Found function {} #{} at {:?}", fun_info.name, fun_info.ordinal, fun_info.address as *const u64));
     //     }
     // }
-    let dll_name = "ntdll.dll";
-    let base_address = get_dll_base_address(dll_name.to_lowercase().as_str());
-    debug_ok_msg!(format!("Found dll {} at address {:?}", dll_name.to_lowercase().as_str(), base_address as *const u64));
 
-    let func_res = get_dll_functions(base_address);
-    if func_res.is_err() {
-        let error = func_res.err().unwrap();
-        debug_error!("Error ", &error);
-        return;
-    }
+    //Exemple 2 : List all functions of the current process's ntdll
+    // let dll_name = "ntdll.dll";
+    // let base_address = get_dll_base_address(dll_name.to_lowercase().as_str());
+    // debug_ok_msg!(format!("Found dll {} at address {:?}", dll_name.to_lowercase().as_str(), base_address as *const u64));
+
+    // let func_res = get_dll_functions(base_address);
+    // if func_res.is_err() {
+    //     let error = func_res.err().unwrap();
+    //     debug_error!("Error ", &error);
+    //     return;
+    // }
     
-    let functions = func_res.unwrap();
-    for fun_info in functions {
-        debug_ok_msg!(format!("Found function {} #{} at {:?}", fun_info.name, fun_info.ordinal, fun_info.address as *const u64));
-    }
+    // let functions = func_res.unwrap();
+    // for fun_info in functions {
+    //     debug_ok_msg!(format!("Found function {} #{} at {:?}", fun_info.name, fun_info.ordinal, fun_info.address as *const u64));
+    // }
+
+    //Exemple 3 : Find the address of a the NtMapViewOfSection
+    let dll_name = "ntdll.dll";
+    let function_name = "NtMapViewOfSection";
+    let dll_base_address = get_dll_base_address(dll_name);
+    let function_address = get_proc_address(dll_base_address, function_name);
+    debug_success_msg!(format!("Found function {} on dll {} at address {:?}", function_name, dll_name, function_address as *const u64));
+
 }
