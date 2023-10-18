@@ -18,10 +18,7 @@ fn show_loaded_dlls() -> Vec<String> {
         let mut p_list_entry = &(*peb.Ldr).InMemoryOrderModuleList as *const LIST_ENTRY;
 
         loop {
-            let buffer = std::slice::from_raw_parts(
-                (*p_ldr_data_table_entry).FullDllName.Buffer.as_ptr(),
-                (*p_ldr_data_table_entry).FullDllName.Length as usize / 2);
-            let dll_name = String::from_utf16_lossy(buffer);
+            let dll_name = (*p_ldr_data_table_entry).FullDllName.to_string().unwrap();
             
             //last element of the list => shoudl stop the loop
             if p_list_entry == (*peb.Ldr).InMemoryOrderModuleList.Blink {

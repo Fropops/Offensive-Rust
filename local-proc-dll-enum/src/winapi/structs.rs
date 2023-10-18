@@ -68,6 +68,15 @@ pub struct UNICODE_STRING {
     pub Buffer: PWSTR,
 }
 
+impl UNICODE_STRING {
+    pub unsafe fn to_string(&self) -> std::result::Result<String, std::string::FromUtf16Error> {
+        let buffer = std::slice::from_raw_parts(
+            self.Buffer.as_ptr(),
+            self.Length as usize / 2);
+        Ok(String::from_utf16_lossy(buffer))
+    }
+}
+
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
 pub type PPS_POST_PROCESS_INIT_ROUTINE = ::core::option::Option<unsafe extern "system" fn() -> ()>;
