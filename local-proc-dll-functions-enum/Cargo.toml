@@ -1,5 +1,5 @@
 [package]
-name = "local-proc-dll-enum"
+name = "local-proc-dll-functions-enum"
 version = "0.1.0"
 edition = "2021"
 

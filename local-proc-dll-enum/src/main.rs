@@ -35,13 +35,10 @@ fn show_loaded_dlls() -> Vec<String> {
 }
 
 fn main() {
-    
-    
     let dlls = show_loaded_dlls();
 
     debug_info_msg!("List of loaded dlls in current Process : ");
     for dll_name in dlls {
         debug_success!("Found dll", dll_name.to_lowercase().as_str());
     }
-    
 }
