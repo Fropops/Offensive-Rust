@@ -218,7 +218,7 @@ pub type MessageBoxA = unsafe extern "system" fn (HWND, winapi::types::PCSTR, wi
 pub type LoadLibraryA = unsafe extern "system" fn (winapi::types::PCSTR) -> i32;
 
 fn main() {
-    //Exemple 1 : List all dlls and all functions of the current process
+    //Example 1 : List all dlls and all functions of the current process
     // let dlls = get_loaded_dlls();
 
     // debug_info_msg!("List of loaded dlls in current Process : ");
@@ -239,7 +239,7 @@ fn main() {
     //     }
     // }
 
-    //Exemple 2 : List all functions of the current process's ntdll
+    //Example 2 : List all functions of the current process's ntdll
     // let dll_name = "ntdll.dll";
     // let base_address = get_dll_base_address(dll_name.to_lowercase().as_str());
     // debug_ok_msg!(format!("Found dll {} at address {:?}", dll_name.to_lowercase().as_str(), base_address as *const u64));
@@ -256,14 +256,14 @@ fn main() {
     //     debug_ok_msg!(format!("Found function {} #{} at {:?}", fun_info.name, fun_info.ordinal, fun_info.address as *const u64));
     // }
 
-    //Exemple 3 : Find the address of a the NtMapViewOfSection
+    //Example 3 : Find the address of a the NtMapViewOfSection
     // let dll_name = "ntdll.dll";
     // let function_name = "NtMapViewOfSection";
     // let dll_base_address = get_dll_base_address(dll_name);
     // let function_address = get_proc_address(dll_base_address, function_name);
     // debug_success_msg!(format!("Found function {} on dll {} at address {:?}", function_name, dll_name, function_address as *const u64));
 
-    //Exemple 4 loading and displaying MessageBox
+    //Example 4 loading and displaying MessageBox
     unsafe {
         let kernel32_base_address: HINSTANCE = get_dll_base_address("kernel32.dll");
         debug_success_msg!(format!("kernel32.dll found at address {:?}", kernel32_base_address as *const u64));
