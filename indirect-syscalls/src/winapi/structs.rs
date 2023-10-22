@@ -1,4 +1,6 @@
+use super::types::NT_STATUS;
 use super::types::PWSTR;
+use super::types::HANDLE;
 
 #[repr(C)]
 #[allow(non_snake_case)]
@@ -227,3 +229,36 @@ pub const IMAGE_DOS_SIGNATURE: u16 = 23117u16;
 pub const IMAGE_NT_SIGNATURE: u32 = 17744u32;
 pub const IMAGE_NT_OPTIONAL_HDR32_MAGIC: u16 = 267u16;
 pub const IMAGE_NT_OPTIONAL_HDR64_MAGIC: u16 = 523u16;
+
+pub const PROCESS_VM_READ: u32 = 16u32;
+pub const PROCESS_VM_WRITE: u32 = 32u32;
+pub const PROCESS_ALL_ACCESS: u32 = 2097151u32;
+
+#[repr(C)]
+#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+pub struct OBJECT_ATTRIBUTES {
+    pub Length: u32,
+    pub RootDirectory: HANDLE,
+    pub ObjectName: *const UNICODE_STRING,
+    pub Attributes: u32,
+    pub SecurityDescriptor: *const ::core::ffi::c_void,
+    pub SecurityQualityOfService: *const ::core::ffi::c_void,
+}
+
+impl ::core::default::Default for OBJECT_ATTRIBUTES {
+    fn default() -> Self {
+        unsafe { ::core::mem::zeroed() }
+    }
+}
+
+#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+#[repr(C)]
+pub struct CLIENT_ID {
+    pub UniqueProcess: HANDLE,
+    pub UniqueThread: HANDLE,
+}
+
+
+pub const STATUS_SUCCESS: NT_STATUS = 0i32;

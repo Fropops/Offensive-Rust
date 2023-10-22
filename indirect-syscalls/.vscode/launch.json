@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'nt-syscall-retrieve-ssn'",
+            "name": "Debug executable 'indirect-syscalls'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=nt-syscall-retrieve-ssn",
-                    "--package=nt-syscall-retrieve-ssn"
+                    "--bin=indirect-syscalls",
+                    "--package=indirect-syscalls"
                 ],
                 "filter": {
-                    "name": "nt-syscall-retrieve-ssn",
+                    "name": "indirect-syscalls",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'nt-syscall-retrieve-ssn'",
+            "name": "Debug unit tests in executable 'indirect-syscalls'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=nt-syscall-retrieve-ssn",
-                    "--package=nt-syscall-retrieve-ssn"
+                    "--bin=indirect-syscalls",
+                    "--package=indirect-syscalls"
                 ],
                 "filter": {
-                    "name": "nt-syscall-retrieve-ssn",
+                    "name": "indirect-syscalls",
                     "kind": "bin"
                 }
             },

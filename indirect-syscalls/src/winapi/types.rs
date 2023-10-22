@@ -1,5 +1,5 @@
 
-use std::{os::raw::c_ulong, ffi::c_ulonglong};
+use std::{os::raw::c_ulong, ffi::{c_ulonglong, c_void}};
 
 //From windows-rs
 //BYTE -> u8
@@ -14,6 +14,11 @@ pub type DWORD64 = __uint64;
 pub type ULONGLONG = c_ulonglong;
 pub type HINSTANCE = isize;
 pub type UINT_PTR = __uint64;
+pub type PVOID = *mut ::core::ffi::c_void;
+//pub type HANDLE = isize;
+pub type HANDLE = isize;
+
+pub type NT_STATUS = i32;
 
 extern "C" {
     #[doc(hidden)]

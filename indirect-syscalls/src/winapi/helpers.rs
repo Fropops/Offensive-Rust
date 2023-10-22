@@ -15,6 +15,8 @@ use super::structs::IMAGE_NT_OPTIONAL_HDR64_MAGIC;
 use super::types::HINSTANCE;
 use super::types::UINT_PTR;
 
+use crate::error::Result;
+
 pub struct FunctionInfo {
     pub name: String,
     pub address: u64,

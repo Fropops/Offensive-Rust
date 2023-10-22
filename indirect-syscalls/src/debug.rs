@@ -60,6 +60,40 @@ macro_rules! debug_base {
 }
 
 #[macro_export]
+macro_rules! debug_base_hex {
+    //1 parameter
+    ($char:expr, $val:expr $(,)?) => {
+                match $val {
+                    tmp => {
+                        if ::std::cfg!(debug_assertions) {
+                            eprintln!("[{}] {} : {}",
+                                $char,
+                                stringify!($val),
+                                format!("{:#x}", &tmp),
+                            );
+                        }
+                        tmp
+                    }
+                }
+            };
+    //2 parameters
+    ($char:expr, $msg:expr, $val:expr $(,)?) => {
+        match $val {
+            tmp => {
+                if ::std::cfg!(debug_assertions) {
+                    eprintln!("[{}] {} : {}",
+                        $char,
+                        $msg,
+                        format!("{:#x}", $val),
+                    );
+                }
+                tmp
+            }
+        }
+    };
+}
+
+#[macro_export]
 macro_rules! debug_base_msg {
     ($char:expr, $val:expr $(,)?) => {
             if ::std::cfg!(debug_assertions) {
@@ -109,6 +143,10 @@ macro_rules! debug_info {
 #[macro_export]
 macro_rules! debug_info_msg {
     ($val:expr $(,)?) => { debug_base_msg!("?", $val); };
+}
+#[macro_export]
+macro_rules! debug_info_hex {
+    ($val:expr $(,)?) => { debug_base_hex!("?", $val); };
 }
 
 #[macro_export]
