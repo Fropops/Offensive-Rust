@@ -1,6 +1,6 @@
-use super::types::NT_STATUS;
 use super::types::PWSTR;
 use super::types::HANDLE;
+use super::constants::IMAGE_NUMBEROF_DIRECTORY_ENTRIES;
 
 #[repr(C)]
 #[allow(non_snake_case)]
@@ -224,15 +224,7 @@ pub struct IMAGE_DATA_DIRECTORY {
     pub Size : u32,
 }
 
-pub const IMAGE_NUMBEROF_DIRECTORY_ENTRIES: usize = 16;
-pub const IMAGE_DOS_SIGNATURE: u16 = 23117u16;
-pub const IMAGE_NT_SIGNATURE: u32 = 17744u32;
-pub const IMAGE_NT_OPTIONAL_HDR32_MAGIC: u16 = 267u16;
-pub const IMAGE_NT_OPTIONAL_HDR64_MAGIC: u16 = 523u16;
 
-pub const PROCESS_VM_READ: u32 = 16u32;
-pub const PROCESS_VM_WRITE: u32 = 32u32;
-pub const PROCESS_ALL_ACCESS: u32 = 2097151u32;
 
 #[repr(C)]
 #[allow(non_snake_case)]
@@ -261,4 +253,3 @@ pub struct CLIENT_ID {
 }
 
 
-pub const STATUS_SUCCESS: NT_STATUS = 0i32;

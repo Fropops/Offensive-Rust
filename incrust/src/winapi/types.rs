@@ -1,5 +1,5 @@
 
-use std::{os::raw::c_ulong, ffi::{c_ulonglong, c_void}};
+use std::os::raw::c_ulong;
 
 //From windows-rs
 //BYTE -> u8
@@ -9,17 +9,28 @@ use std::{os::raw::c_ulong, ffi::{c_ulonglong, c_void}};
 //ULONGLONG -> u64
 
 pub type DWORD = c_ulong;
+#[allow(non_camel_case_types)]
 pub type __uint64 = u64;
 pub type DWORD64 = __uint64;
-pub type ULONGLONG = c_ulonglong;
+//pub type ULONGLONG = c_ulonglong;
 pub type HINSTANCE = isize;
+#[allow(non_camel_case_types)]
 pub type UINT_PTR = __uint64;
-pub type PVOID = *mut ::core::ffi::c_void;
-//pub type HANDLE = isize;
+//pub type PVOID = *mut ::core::ffi::c_void;
 pub type HANDLE = isize;
 
+#[allow(non_camel_case_types)]
 pub type NT_STATUS = i32;
 
+#[allow(non_camel_case_types)]
+#[allow(dead_code)]
+pub type PROCESS_ACCESS_RIGHTS = u32;
+#[allow(non_camel_case_types)]
+pub type VIRTUAL_ALLOCATION_TYPE = u32;
+#[allow(non_camel_case_types)]
+pub type PAGE_PROTECTION_FLAGS = u32;
+
+#[allow(dead_code)]
 extern "C" {
     #[doc(hidden)]
     pub fn strlen(s: PCSTR) -> usize;
@@ -31,6 +42,7 @@ extern "C" {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PWSTR(pub *mut u16);
 
+#[allow(dead_code)]
 impl PWSTR {
     /// Construct a new `PWSTR` from a raw pointer.
     pub const fn from_raw(ptr: *mut u16) -> Self {
@@ -96,6 +108,7 @@ impl PWSTR {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PCWSTR(pub *const u16);
 
+#[allow(dead_code)]
 impl PCWSTR {
     /// Construct a new `PCWSTR` from a raw pointer
     pub const fn from_raw(ptr: *const u16) -> Self {
@@ -159,6 +172,7 @@ impl PCWSTR {
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct PCSTR(pub *const u8);
 
+#[allow(dead_code)]
 impl PCSTR {
     /// Construct a new `PCSTR` from a raw pointer
     pub const fn from_raw(ptr: *const u8) -> Self {

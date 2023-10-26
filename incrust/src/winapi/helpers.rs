@@ -9,9 +9,9 @@ use super::structs::IMAGE_NT_HEADERS64;
 use super::structs::IMAGE_OPTIONAL_HEADER64;
 use super::structs::IMAGE_DATA_DIRECTORY;
 use super::structs::IMAGE_EXPORT_DIRECTORY;
-use super::structs::IMAGE_DOS_SIGNATURE;
-use super::structs::IMAGE_NT_SIGNATURE;
-use super::structs::IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+use super::constants::IMAGE_DOS_SIGNATURE;
+use super::constants::IMAGE_NT_SIGNATURE;
+use super::constants::IMAGE_NT_OPTIONAL_HDR64_MAGIC;
 use super::types::HINSTANCE;
 use super::types::UINT_PTR;
 
@@ -21,6 +21,7 @@ pub struct FunctionInfo {
     pub name: String,
     pub address: u64,
     pub ordinal: u16,
+    pub hooked: bool,
     pub next_func_address: u64,
     pub syscall_number: Option<u16>,
     pub syscall_address: Option<u64>,
@@ -28,7 +29,7 @@ pub struct FunctionInfo {
 
 impl FunctionInfo {
     pub fn new(name: String, address: u64, ordinal: u16) -> Self {
-        Self { name: name, address: address, ordinal: ordinal, next_func_address: 0, syscall_address: None, syscall_number: None }
+        Self { name: name, address: address, ordinal: ordinal, next_func_address: 0, syscall_address: None, syscall_number: None, hooked: false }
     }
 
     pub fn size(&self) -> isize{
@@ -42,10 +43,11 @@ impl FunctionInfo {
 
 impl Clone for FunctionInfo {
     fn clone(&self) -> Self {
-        Self { name: String::from(self.name.to_string()), address: self.address, ordinal: self.ordinal, next_func_address: self.next_func_address, syscall_address: self.syscall_address, syscall_number: self.syscall_number }
+        Self { name: String::from(self.name.to_string()), address: self.address, ordinal: self.ordinal, next_func_address: self.next_func_address, syscall_address: self.syscall_address, syscall_number: self.syscall_number, hooked: self.hooked }
     }
 }
 
+#[allow(dead_code)]
 pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
     let nt_dll_name = "ntdll.dll";
     let nt_base_address = get_dll_base_address(nt_dll_name.to_lowercase().as_str());
@@ -62,7 +64,7 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
 
         let mut new_fun = func.clone();
 
-        if func.name.to_lowercase().starts_with("nt") {
+        if func.name.to_lowercase().starts_with("nt") { 
             for next_index in func_index+1..all_functions.len()-1 {
                 let next_func = &all_functions[next_index];
                 if next_func.address > current_address {
@@ -71,13 +73,16 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                 }
             }
 
-            nt_functions.push(new_fun)
+            if new_fun.size() == 32 { //sycalls are 32 byte length functions
+                nt_functions.push(new_fun)
+            }
         }
     }
 
     //Look for syscalls address
     unsafe {
         for func in & mut nt_functions {
+            func.hooked = true;
             for byte_index in 0..func.size()-1 {
                 let look_start_address = func.address + (byte_index as u64);
 
@@ -91,6 +96,7 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                         let high =  *((look_start_address + 5) as  *const u8);
 
                         func.syscall_number = Some((high as u16) << 8 | (low as u16));
+                        func.hooked = false;
                     }
                 
                 //look for syscall address
@@ -100,13 +106,27 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                     {
                         func.syscall_address = Some(look_start_address);
                     }
+
             }
+        }
+    }
+
+    //find incremental syscall for hooked syscalls
+    let mut next_syscall_number = 0u16;
+    for func in & mut nt_functions {
+        if func.hooked {
+            func.syscall_number = Some(next_syscall_number);
+            next_syscall_number += 1;
+        }
+        else {
+            next_syscall_number = func.syscall_number.unwrap() + 1;
         }
     }
 
     Ok(nt_functions)
 }
 
+#[allow(dead_code)]
 pub fn get_dll_base_address(module_name: &str) -> HINSTANCE {
     unsafe {
 
@@ -137,13 +157,14 @@ pub fn get_dll_base_address(module_name: &str) -> HINSTANCE {
     }
 }
 
+#[allow(dead_code)]
 pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
     let dos_headers: *const IMAGE_DOS_HEADER;
     let nt_headers: *const IMAGE_NT_HEADERS64;
     let optional_header: * const IMAGE_OPTIONAL_HEADER64;
     let data_directory: *const IMAGE_DATA_DIRECTORY;
     let export_directory: *const IMAGE_EXPORT_DIRECTORY;
-    let mut function_address_array: UINT_PTR;
+    let function_address_array: UINT_PTR;
     let mut function_name_array: UINT_PTR;
     let mut function_ordinals_array: UINT_PTR;
     
@@ -195,6 +216,7 @@ pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
     }
 }
 
+#[allow(dead_code)]
 pub fn get_loaded_dlls() -> Vec<String> {
     unsafe {
         let mut dlls: Vec<String> = vec!();
@@ -223,6 +245,7 @@ pub fn get_loaded_dlls() -> Vec<String> {
     }
 }
 
+#[allow(dead_code)]
 pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> {
     let mut functions: Vec<FunctionInfo> = vec!();
  
@@ -231,7 +254,7 @@ pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> 
     let optional_header: * const IMAGE_OPTIONAL_HEADER64;
     let data_directory: *const IMAGE_DATA_DIRECTORY;
     let export_directory: *const IMAGE_EXPORT_DIRECTORY;
-    let mut function_address_array: UINT_PTR;
+    let function_address_array: UINT_PTR;
     let mut function_name_array: UINT_PTR;
     let mut function_ordinals_array: UINT_PTR;
     

@@ -1,0 +1,4 @@
+[env]
+C2_SERVER_KEY = { value = "MXlPZEVWWGVmN2xqbnpyUg==", force=true }
+ENDPOINT = { value = "https://192.168.48.128", force=true }
+LITCRYPT_ENCRYPT_KEY  = { value = "testkeywillbeoverwritten", force=true }

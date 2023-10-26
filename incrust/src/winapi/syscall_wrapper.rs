@@ -1,17 +1,16 @@
-use std::ffi::c_void;
-use std::ptr::null_mut;
-
 use rand::seq::SliceRandom;
 
 use super::helpers::FunctionInfo;
 use super::helpers::load_nt_syscall_info;
 use super::structs::CLIENT_ID;
+
+// use crate::debug_info_hex;
+// use crate::debug_base_hex;
+
 // use crate::debug_info;
 // use crate::debug_info_msg;
 use crate::error::Result;
 use crate::syscall;
-use crate::winapi::structs::PROCESS_VM_READ;
-use crate::winapi::structs::PROCESS_VM_WRITE;
 
 use super::types::HANDLE;
 use super::structs::OBJECT_ATTRIBUTES;
@@ -38,14 +37,16 @@ impl SyscallWrapper {
     //     IN ULONG            AllocationType,   // MEM_COMMIT | MEM_RESERVE
     //     IN ULONG            Protect           // Page protection 
     //   );
-    pub fn NtAllocateVirtualMemory(&self, process_handle: HANDLE, base_address: &mut usize, region_size: &mut usize, allocation_type: u32, protect: u32) -> i32 {
-        let func_name = "NtAllocateVirtualMemory";
-        let ssn = self.resolver.retrieve_ssn(func_name).expect(format!("No SSN found for {} !", func_name).as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect("No syscall address available!");
+    #[allow(dead_code)]
+    pub fn nt_allocate_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, region_size: &mut usize, allocation_type: u32, protect: u32) -> i32 {
+        let func_name = lc!("NtAllocateVirtualMemory");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
 
-        // debug_info_msg!(format!("call to {} SSN #{} addr {:#x} ", func_name, ssn, addr));
-        // debug_info!(ssn);
-        debug_info_hex!(addr);
+        //debug_info_hex!(addr);
         unsafe {
                 syscall!(
                 ssn,
@@ -61,12 +62,14 @@ impl SyscallWrapper {
     }
 
 
-    
-    pub fn NtOpenProcess(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
-        let func_name = "NtOpenProcess";
-        let ssn = self.resolver.retrieve_ssn(func_name).expect(format!("No SSN found for {} !", func_name).as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect("No syscall address available!");
-        debug_info_hex!(addr);
+    #[allow(dead_code)]
+    pub fn nt_open_process(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
+        let func_name = lc!("NtOpenProcess");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
 
         let mut oa = OBJECT_ATTRIBUTES::default();
 

