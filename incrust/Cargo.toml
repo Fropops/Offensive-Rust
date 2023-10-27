@@ -20,10 +20,13 @@ litcrypt = "0.3.0"
 rand = "0.8.5"
 
 [features]
-default = ["inject_self"]
+default = ["payload_b64", "inject_self"]
 no_console = []
 regsvr = []
 xll = []
+#payload type
+payload_b64 = []
+#injection target
 inject_self = []
 inject_proc_id = []
 inject_proc_name = []

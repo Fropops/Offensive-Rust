@@ -111,7 +111,7 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
         }
     }
 
-    //find incremental syscall for hooked syscalls
+    //find incremental syscall number for hooked syscalls
     let mut next_syscall_number = 0u16;
     for func in & mut nt_functions {
         if func.hooked {

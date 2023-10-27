@@ -45,8 +45,6 @@ impl SyscallWrapper {
         let addr_error = lc!("No syscall address available!");
         let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
         let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
-
-        //debug_info_hex!(addr);
         unsafe {
                 syscall!(
                 ssn,
@@ -61,6 +59,100 @@ impl SyscallWrapper {
         }
     }
 
+    // NTSTATUS NtProtectVirtualMemory(
+    //     IN HANDLE               ProcessHandle,
+    //     IN OUT PVOID            *BaseAddress,
+    //     IN OUT PULONG           NumberOfBytesToProtect,
+    //     IN ULONG                NewAccessProtection,
+    //     OUT PULONG              OldAccessProtection );
+    #[allow(dead_code)]
+    pub fn nt_protect_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, number_of_bytes_to_protect: &mut usize, new_access_portection: u32, old_access_protection: &mut u32) -> i32 {
+        let func_name = lc!("NtProtectVirtualMemory");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        unsafe {
+                syscall!(
+                ssn,
+                addr,
+                process_handle,
+                base_address,
+                number_of_bytes_to_protect,
+                new_access_portection,
+                old_access_protection
+            )
+        }
+    }
+
+    // NTSTATUS NtWriteVirtualMemory(
+    //     IN HANDLE               ProcessHandle,          // Process handle whose memory is to be written to          
+    //     IN PVOID                BaseAddress,            // Base address in the specified process to which data is written
+    //     IN PVOID                Buffer,                 // Data to be written
+    //     IN ULONG                NumberOfBytesToWrite,   // Number of bytes to be written
+    //     OUT PULONG              NumberOfBytesWritten    // Pointer to a variable that receives the number of bytes actually written 
+    //   );
+      #[allow(dead_code)]
+    pub fn nt_write_virtual_memory(&self, process_handle: HANDLE, base_address: usize, buffer: usize, number_of_bytes_to_write: usize, number_of_bytes_written: &mut usize) -> i32 {
+        let func_name = lc!("NtWriteVirtualMemory");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        unsafe {
+                syscall!(
+                ssn,
+                addr,
+                process_handle,
+                base_address,
+                buffer,
+                number_of_bytes_to_write,
+                number_of_bytes_written
+            )
+        }
+    }
+
+    // NTSTATUS NtCreateThreadEx(
+    //     OUT PHANDLE                 ThreadHandle,         // Pointer to a HANDLE variable that recieves the created thread's handle
+    //     IN 	ACCESS_MASK             DesiredAccess,        // Thread's access rights (set to THREAD_ALL_ACCESS - 0x1FFFFF)  
+    //     IN 	POBJECT_ATTRIBUTES      ObjectAttributes,     // Pointer to OBJECT_ATTRIBUTES structure (set to NULL)
+    //     IN 	HANDLE                  ProcessHandle,        // Handle to the process in which the thread is to be created.
+    //     IN 	PVOID                   StartRoutine,         // Base address of the application-defined function to be executed
+    //     IN 	PVOID                   Argument,             // Pointer to a variable to be passed to the thread function (set to NULL)
+    //     IN 	ULONG                   CreateFlags,          // The flags that control the creation of the thread (set to NULL)
+    //     IN 	SIZE_T                  ZeroBits,             // Set to NULL
+    //     IN 	SIZE_T                  StackSize,            // Set to NULL
+    //     IN 	SIZE_T                  MaximumStackSize,     // Set to NULL
+    //     IN 	PPS_ATTRIBUTE_LIST      AttributeList         // Pointer to PS_ATTRIBUTE_LIST structure (set to NULL)
+    // );
+    #[allow(dead_code)]
+    pub fn nt_create_thread_ex(&self, thread_handle: &mut HANDLE, desired_access: u32, process_handle: HANDLE, start_routine: usize) -> i32 {
+        let func_name = lc!("NtCreateThreadEx");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        unsafe {
+                syscall!(
+                ssn,
+                addr,
+                thread_handle,
+                desired_access,
+                0usize,
+                process_handle,
+                start_routine,
+                0usize,
+                0u32,
+                0usize,
+                0usize,
+                0usize,
+                0usize
+            )
+        }
+    }
 
     #[allow(dead_code)]
     pub fn nt_open_process(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
@@ -89,7 +181,34 @@ impl SyscallWrapper {
             )
         }
     }
+
+    // NTSTATUS NtWaitForSingleObject(
+    //     [in] HANDLE         Handle,
+    //     [in] BOOLEAN        Alertable,
+    //     [in] PLARGE_INTEGER Timeout
+    //   );
+    #[allow(dead_code)]
+    pub fn nt_wait_for_single_object(&self, handle: HANDLE) -> i32 {
+        let func_name = lc!("NtWaitForSingleObject");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+
+        unsafe {
+            syscall!(
+                ssn,
+                addr,
+                handle,
+                0usize,
+                0usize
+            )
+        }
+    }
 }
+
+
 
 
 struct SSNResolver {
