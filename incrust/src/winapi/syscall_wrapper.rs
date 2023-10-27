@@ -40,11 +40,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_allocate_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, region_size: &mut usize, allocation_type: u32, protect: u32) -> i32 {
         let func_name = lc!("NtAllocateVirtualMemory");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
         unsafe {
                 syscall!(
                 ssn,
@@ -68,11 +65,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_protect_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, number_of_bytes_to_protect: &mut usize, new_access_portection: u32, old_access_protection: &mut u32) -> i32 {
         let func_name = lc!("NtProtectVirtualMemory");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
         unsafe {
                 syscall!(
                 ssn,
@@ -96,11 +90,8 @@ impl SyscallWrapper {
       #[allow(dead_code)]
     pub fn nt_write_virtual_memory(&self, process_handle: HANDLE, base_address: usize, buffer: usize, number_of_bytes_to_write: usize, number_of_bytes_written: &mut usize) -> i32 {
         let func_name = lc!("NtWriteVirtualMemory");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
         unsafe {
                 syscall!(
                 ssn,
@@ -130,11 +121,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_create_thread_ex(&self, thread_handle: &mut HANDLE, desired_access: u32, process_handle: HANDLE, start_routine: usize) -> i32 {
         let func_name = lc!("NtCreateThreadEx");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
         unsafe {
                 syscall!(
                 ssn,
@@ -157,11 +145,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_open_process(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
         let func_name = lc!("NtOpenProcess");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
 
         let mut oa = OBJECT_ATTRIBUTES::default();
 
@@ -190,11 +175,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_wait_for_single_object(&self, handle: HANDLE) -> i32 {
         let func_name = lc!("NtWaitForSingleObject");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
 
         unsafe {
             syscall!(
@@ -213,11 +195,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_close(&self, handle: HANDLE) -> i32 {
         let func_name = lc!("NtClose");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
 
         unsafe {
             syscall!(
@@ -237,11 +216,8 @@ impl SyscallWrapper {
     #[allow(dead_code)]
     pub fn nt_query_system_information(&self, system_information_class: i32, system_information: *mut u8, system_information_length: u32, return_length: *mut u32) -> i32 {
         let func_name = lc!("NtQuerySystemInformation");
-        let mut ssn_error = lc!("No SSN found for ");
-        ssn_error.push_str(func_name.as_str());
-        let addr_error = lc!("No syscall address available!");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
-        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        let addr = self.resolver.get_random_syscall_addr().unwrap();
 
         unsafe {
             syscall!(
@@ -273,7 +249,7 @@ impl SSNResolver {
     }
 
     pub fn load_syscalls(&mut self) {
-        self.functions = load_nt_syscall_info().expect("Cannot load nt infos!");
+        self.functions = load_nt_syscall_info().unwrap();
         for func in &self.functions {
             if func.syscall_address.is_some() {
                 self.syscall_addresses.push(func.syscall_address.unwrap())
@@ -285,17 +261,25 @@ impl SSNResolver {
         for func in &self.functions {
             if func.name.to_lowercase() == func_name.to_lowercase() {
                 if func.syscall_number.is_none() {
-                    return Err(Box::from(format!("Function {} has no ssn !", func_name)));
+                    let mut error_msg = lc!("Function ");
+                    error_msg.push_str(func_name);
+                    error_msg.push_str(" has no ssn !");
+                    return Err(Box::from(error_msg));
                 }
                 return Ok(func.syscall_number.unwrap());
             }
         }
-        return Err(Box::from(format!("Function {} cannot be found !", func_name)));
+
+        let mut error_msg = lc!("Function ");
+        error_msg.push_str(func_name);
+        error_msg.push_str(" cannot be found !");
+        return Err(Box::from(error_msg));
     }
 
     pub fn get_random_syscall_addr(&self) -> Result<u64> {
         if self.syscall_addresses.len() == 0 {
-            return Err(Box::from("No syscall address available !"));
+            let error_msg = lc!("No syscall address available !");
+            return Err(Box::from(error_msg));
         }
         Ok(self.syscall_addresses.choose(&mut rand::thread_rng()).unwrap().clone())
     }

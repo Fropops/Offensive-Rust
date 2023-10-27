@@ -107,7 +107,7 @@ macro_rules! debug_base_msg {
 
 #[macro_export]
 macro_rules! debug_success {
-    ($val:expr $(,)?) => { debug_base!("*", $val); };
+    ($val:expr $(,)?) => { debug_base!("*", $val) };
     ($msg:expr, $val:expr $(,)?) => { debug_base!("*", $msg, $val); };
 }
 #[macro_export]
@@ -117,7 +117,7 @@ macro_rules! debug_success_msg {
 
 #[macro_export]
 macro_rules! debug_ok {
-    ($val:expr $(,)?) => { debug_base!("+", $val); };
+    ($val:expr $(,)?) => { debug_base!("+", $val) };
     ($msg:expr, $val:expr $(,)?) => { debug_base!("+", $msg, $val); };
 }
 #[macro_export]
@@ -127,46 +127,46 @@ macro_rules! debug_ok_msg {
 
 #[macro_export]
 macro_rules! debug_error {
-    ($val:expr $(,)?) => { debug_base!("X", $val); };
+    ($val:expr $(,)?) => { debug_base!("X", $val) };
     ($msg:expr, $val:expr $(,)?) => { debug_base!("X", $msg, $val); };
 }
 #[macro_export]
 macro_rules! debug_error_msg {
-    ($val:expr $(,)?) => { debug_base_msg!("X", $val); };
+    ($val:expr $(,)?) => { debug_base_msg!("X", $val) };
 }
 
 #[macro_export]
 macro_rules! debug_info {
-    ($val:expr $(,)?) => { debug_base!("?", $val); };
+    ($val:expr $(,)?) => { debug_base!("?", $val) };
     ($msg:expr, $val:expr $(,)?) => { debug_base!("?", $msg, $val); };
 }
 #[macro_export]
 macro_rules! debug_info_msg {
-    ($val:expr $(,)?) => { debug_base_msg!("?", $val); };
+    ($val:expr $(,)?) => { debug_base_msg!("?", $val) };
 }
 #[macro_export]
 macro_rules! debug_info_hex {
-    ($val:expr $(,)?) => { debug_base_hex!("?", $val); };
+    ($val:expr $(,)?) => { debug_base_hex!("?", $val) };
 }
 
 #[macro_export]
 macro_rules! debug_warning {
-    ($val:expr $(,)?) => { debug_base!("!", $val); };
+    ($val:expr $(,)?) => { debug_base!("!", $val) };
     ($msg:expr, $val:expr $(,)?) => { debug_base!("!", $msg, $val); };
 }
 #[macro_export]
 macro_rules! debug_warning_msg {
-    ($val:expr $(,)?) => { debug_base_msg!("!", $val); };
+    ($val:expr $(,)?) => { debug_base_msg!("!", $val) };
 }
 
 #[macro_export]
 macro_rules! debug_ko {
-    ($val:expr $(,)?) => { debug_base!("-", $val); };
+    ($val:expr $(,)?) => { debug_base!("-", $val) };
     ($msg:expr, $val:expr $(,)?) => { debug_base!("-", $msg, $val); };
 }
 #[macro_export]
 macro_rules! debug_ko_msg {
-    ($val:expr $(,)?) => { debug_base_msg!("-", $val); };
+    ($val:expr $(,)?) => { debug_base_msg!("-", $val) };
 }
 // macro_rules! debug_base {
 //     //1 parameter

