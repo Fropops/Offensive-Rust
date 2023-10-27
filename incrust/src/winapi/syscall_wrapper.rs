@@ -206,6 +206,27 @@ impl SyscallWrapper {
             )
         }
     }
+
+    // NTSTATUS NtClose(
+    //     [in] HANDLE Handle
+    //   );
+    #[allow(dead_code)]
+    pub fn nt_close(&self, handle: HANDLE) -> i32 {
+        let func_name = lc!("NtClose");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+
+        unsafe {
+            syscall!(
+                ssn,
+                addr,
+                handle
+            )
+        }
+    }
 }
 
 
