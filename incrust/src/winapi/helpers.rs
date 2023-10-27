@@ -19,16 +19,16 @@ use crate::error::Result;
 
 pub struct FunctionInfo {
     pub name: String,
-    pub address: u64,
+    pub address: usize,
     pub ordinal: u16,
     pub hooked: bool,
-    pub next_func_address: u64,
+    pub next_func_address: usize,
     pub syscall_number: Option<u16>,
-    pub syscall_address: Option<u64>,
+    pub syscall_address: Option<usize>,
 }
 
 impl FunctionInfo {
-    pub fn new(name: String, address: u64, ordinal: u16) -> Self {
+    pub fn new(name: String, address: usize, ordinal: u16) -> Self {
         Self { name: name, address: address, ordinal: ordinal, next_func_address: 0, syscall_address: None, syscall_number: None, hooked: false }
     }
 
@@ -84,7 +84,7 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
         for func in & mut nt_functions {
             func.hooked = true;
             for byte_index in 0..func.size()-1 {
-                let look_start_address = func.address + (byte_index as u64);
+                let look_start_address = func.address + (byte_index as usize);
 
                 //look for ssn
                 if *(look_start_address as  *const u8) == 0x4C 
@@ -290,7 +290,7 @@ pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> 
             
             let fun_ord = *(function_ordinals_array as *const u16);
             let address_ptr = function_address_array + fun_ord as u64 * (std::mem::size_of::<u32>() as u64);
-            let fun_addr = module_handle as u64 + *(address_ptr as *const u32) as u64;
+            let fun_addr = module_handle as usize + *(address_ptr as *const u32) as usize;
             //debug_info!(fun_name);
             //debug_info!(fun_ord);
             //debug_info!(fun_addr); 

@@ -1,1 +1,1 @@
-INC'RUST, a rust loader !
+incRUST, a rust loader !

