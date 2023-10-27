@@ -70,6 +70,13 @@ pub struct UNICODE_STRING {
     pub Buffer: PWSTR,
 }
 
+impl ::core::marker::Copy for UNICODE_STRING {}
+impl ::core::clone::Clone for UNICODE_STRING {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
 impl UNICODE_STRING {
     pub unsafe fn to_string(&self) -> std::result::Result<String, std::string::FromUtf16Error> {
         let buffer = std::slice::from_raw_parts(
@@ -252,4 +259,38 @@ pub struct CLIENT_ID {
     pub UniqueThread: HANDLE,
 }
 
+#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+#[repr(C)]
+pub struct SYSTEM_PROCESS_INFORMATION {
+    pub NextEntryOffset: u32,
+    pub NumberOfThreads: u32,
+    pub Reserved1: [u8; 48],
+    pub ImageName: UNICODE_STRING,
+    pub BasePriority: i32,
+    pub UniqueProcessId: HANDLE,
+    pub Reserved2: *mut ::core::ffi::c_void,
+    pub HandleCount: u32,
+    pub SessionId: u32,
+    pub Reserved3: *mut ::core::ffi::c_void,
+    pub PeakVirtualSize: usize,
+    pub VirtualSize: usize,
+    pub Reserved4: u32,
+    pub PeakWorkingSetSize: usize,
+    pub WorkingSetSize: usize,
+    pub Reserved5: *mut ::core::ffi::c_void,
+    pub QuotaPagedPoolUsage: usize,
+    pub Reserved6: *mut ::core::ffi::c_void,
+    pub QuotaNonPagedPoolUsage: usize,
+    pub PagefileUsage: usize,
+    pub PeakPagefileUsage: usize,
+    pub PrivatePageCount: usize,
+    pub Reserved7: [i64; 6],
+}
 
+impl ::core::marker::Copy for SYSTEM_PROCESS_INFORMATION {}
+impl ::core::clone::Clone for SYSTEM_PROCESS_INFORMATION {
+    fn clone(&self) -> Self {
+        *self
+    }
+}

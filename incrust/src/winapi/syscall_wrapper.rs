@@ -227,6 +227,33 @@ impl SyscallWrapper {
             )
         }
     }
+
+    // NTSTATUS NtQuerySystemInformation(
+    //     [in]            SYSTEM_INFORMATION_CLASS SystemInformationClass,
+    //     [in, out]       PVOID                    SystemInformation,
+    //     [in]            ULONG                    SystemInformationLength,
+    //     [out, optional] PULONG                   ReturnLength
+    //   );
+    #[allow(dead_code)]
+    pub fn nt_query_system_information(&self, system_information_class: i32, system_information: *mut u8, system_information_length: u32, return_length: *mut u32) -> i32 {
+        let func_name = lc!("NtQuerySystemInformation");
+        let mut ssn_error = lc!("No SSN found for ");
+        ssn_error.push_str(func_name.as_str());
+        let addr_error = lc!("No syscall address available!");
+        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).expect(ssn_error.as_str());
+        let addr = self.resolver.get_random_syscall_addr().expect(addr_error.as_str());
+
+        unsafe {
+            syscall!(
+                ssn,
+                addr,
+                system_information_class,
+                system_information,
+                system_information_length,
+                return_length
+            )
+        }
+    }
 }
 
 

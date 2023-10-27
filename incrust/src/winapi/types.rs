@@ -31,6 +31,8 @@ pub type VIRTUAL_ALLOCATION_TYPE = u32;
 pub type PAGE_PROTECTION_FLAGS = u32;
 #[allow(non_camel_case_types)]
 pub type THREAD_ACCESS_RIGHTS = u32;
+#[allow(non_camel_case_types)]
+pub type SYSTEM_INFORMATION_CLASS = i32;
 
 #[allow(dead_code)]
 extern "C" {
