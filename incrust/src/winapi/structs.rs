@@ -181,6 +181,7 @@ pub struct IMAGE_EXPORT_DIRECTORY {
 #[repr(C)]
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86_64")]
 pub struct IMAGE_NT_HEADERS64 {
     pub Signature: u32,
     pub FileHeader: IMAGE_FILE_HEADER,
@@ -190,6 +191,7 @@ pub struct IMAGE_NT_HEADERS64 {
 #[repr(C)]
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86_64")]
 pub struct IMAGE_OPTIONAL_HEADER64 {
     pub Magic: u16,
     pub MajorLinkerVersion: u8,
@@ -293,4 +295,53 @@ impl ::core::clone::Clone for SYSTEM_PROCESS_INFORMATION {
     fn clone(&self) -> Self {
         *self
     }
+}
+ 
+
+#[repr(C)]
+#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86")]
+pub struct IMAGE_OPTIONAL_HEADER32 {
+    pub Magic: u16,
+    pub MajorLinkerVersion: u8,
+    pub MinorLinkerVersion: u8,
+    pub SizeOfCode: u32,
+    pub SizeOfInitializedData: u32,
+    pub SizeOfUninitializedData: u32,
+    pub AddressOfEntryPoint: u32,
+    pub BaseOfCode: u32,
+    pub BaseOfData: u32,
+    pub ImageBase: u32,
+    pub SectionAlignment: u32,
+    pub FileAlignment: u32,
+    pub MajorOperatingSystemVersion: u16,
+    pub MinorOperatingSystemVersion: u16,
+    pub MajorImageVersion: u16,
+    pub MinorImageVersion: u16,
+    pub MajorSubsystemVersion: u16,
+    pub MinorSubsystemVersion: u16,
+    pub Win32VersionValue: u32,
+    pub SizeOfImage: u32,
+    pub SizeOfHeaders: u32,
+    pub CheckSum: u32,
+    pub Subsystem: u16,
+    pub DllCharacteristics: u16,
+    pub SizeOfStackReserve: u32,
+    pub SizeOfStackCommit: u32,
+    pub SizeOfHeapReserve: u32,
+    pub SizeOfHeapCommit: u32,
+    pub LoaderFlags: u32,
+    pub NumberOfRvaAndSizes: u32,
+    pub DataDirectory: [IMAGE_DATA_DIRECTORY; IMAGE_NUMBEROF_DIRECTORY_ENTRIES],
+}
+
+#[repr(C)]
+#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86")]
+pub struct IMAGE_NT_HEADERS32 {
+    pub Signature: u32,
+    pub FileHeader: IMAGE_FILE_HEADER,
+    pub OptionalHeader : IMAGE_OPTIONAL_HEADER32,
 }

@@ -1,19 +1,30 @@
 use crate::*;
 
+#[cfg(target_arch = "x86_64")]
 use super::functions::__readgsqword;
+#[cfg(target_arch = "x86")]
+use super::functions::__readfsdword;
 use super::structs::PEB;
 use super::structs::LDR_DATA_TABLE_ENTRY;
 use super::structs::LIST_ENTRY;
 use super::structs::IMAGE_DOS_HEADER;
+#[cfg(target_arch = "x86_64")]
 use super::structs::IMAGE_NT_HEADERS64;
+#[cfg(target_arch = "x86_64")]
 use super::structs::IMAGE_OPTIONAL_HEADER64;
+#[cfg(target_arch = "x86")]
+use super::structs::IMAGE_NT_HEADERS32;
+#[cfg(target_arch = "x86")]
+use super::structs::IMAGE_OPTIONAL_HEADER32;
 use super::structs::IMAGE_DATA_DIRECTORY;
 use super::structs::IMAGE_EXPORT_DIRECTORY;
 use super::constants::IMAGE_DOS_SIGNATURE;
 use super::constants::IMAGE_NT_SIGNATURE;
+#[cfg(target_arch = "x86_64")]
 use super::constants::IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+#[cfg(target_arch = "x86")]
+use super::constants::IMAGE_NT_OPTIONAL_HDR32_MAGIC;
 use super::types::HINSTANCE;
-use super::types::UINT_PTR;
 
 use crate::error::Result;
 
@@ -49,6 +60,12 @@ impl Clone for FunctionInfo {
 
 #[allow(dead_code)]
 pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
+    #[cfg(target_arch = "x86_64")]
+    let syscall_function_size = 32;
+    #[cfg(target_arch = "x86")]
+    let syscall_function_size = 16;
+    
+
     let nt_dll_name = "ntdll.dll";
     let nt_base_address = get_dll_base_address(nt_dll_name.to_lowercase().as_str());
 
@@ -73,7 +90,10 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                 }
             }
 
-            if new_fun.size() == 32 { //sycalls are 32 byte length functions
+            // debug_info!(&new_fun.name);
+            // debug_info!(&new_fun.size());
+
+            if new_fun.size() == syscall_function_size {
                 nt_functions.push(new_fun)
             }
         }
@@ -82,11 +102,18 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
     //Look for syscalls address
     unsafe {
         for func in & mut nt_functions {
+            if &func.name == "NtAllocateVirtualMemory" {
+                debug_info!(&func.name);
+                debug_info_msg!(format!("{:#x}", func.address));
+            }
+            //debug_info!(&func.name);
+            //debug_info_msg!(format!("{:#x}", func.address));
             func.hooked = true;
             for byte_index in 0..func.size()-1 {
                 let look_start_address = func.address + (byte_index as usize);
 
                 //look for ssn
+                #[cfg(target_arch = "x86_64")]
                 if *(look_start_address as  *const u8) == 0x4C 
                     && *((look_start_address + 1) as  *const u8) == 0x8B 
                     && *((look_start_address + 2) as  *const u8) == 0xD1 
@@ -96,16 +123,39 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                         let high =  *((look_start_address + 5) as  *const u8);
 
                         func.syscall_number = Some((high as u16) << 8 | (low as u16));
+                        debug_info!(func.syscall_number);
+                        func.hooked = false;
+                    }
+
+                #[cfg(target_arch = "x86")]
+                if *(look_start_address as  *const u8) == 0xB8  
+                    && *((look_start_address + 3) as  *const u8) == 0x00 
+                    && *((look_start_address + 4) as  *const u8) == 0x00 
+                    {
+                        let low =  *((look_start_address + 1) as  *const u8);
+                        let high =  *((look_start_address + 2) as  *const u8);
+
+                        func.syscall_number = Some((high as u16) << 8 | (low as u16));
+                        //debug_info!(func.syscall_number);
                         func.hooked = false;
                     }
                 
                 //look for syscall address
+                #[cfg(target_arch = "x86_64")]
                 if *(look_start_address as  *const u8) == 0x0F 
                     && *((look_start_address + 1) as  *const u8) == 0x05
                     && *((look_start_address + 2) as  *const u8) == 0xC3
                     {
                         func.syscall_address = Some(look_start_address);
                     }
+
+                #[cfg(target_arch = "x86")]
+                if *(look_start_address as  *const u8) == 0xFF 
+                && *((look_start_address + 1) as  *const u8) == 0x12
+                {
+                    func.syscall_address = Some(look_start_address);
+                    //debug_info_msg!(format!("jump {:#x}", look_start_address));
+                }
 
             }
         }
@@ -129,8 +179,10 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
 #[allow(dead_code)]
 pub fn get_dll_base_address(module_name: &str) -> HINSTANCE {
     unsafe {
-
-        let peb_offset: *const u64 = __readgsqword(0x60)  as *const u64;
+        #[cfg(target_arch = "x86_64")]
+        let peb_offset: *const usize = __readgsqword(0x60)  as *const usize;
+        #[cfg(target_arch = "x86")]
+        let peb_offset: *const usize = __readfsdword(0x30)  as *const usize;
         //debug_info!(peb_offset);
         let rf_peb: *const PEB = peb_offset as * const PEB;
         let peb = *rf_peb;
@@ -158,15 +210,16 @@ pub fn get_dll_base_address(module_name: &str) -> HINSTANCE {
 }
 
 #[allow(dead_code)]
-pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
+#[cfg(target_arch = "x86_64")]
+pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> usize {
     let dos_headers: *const IMAGE_DOS_HEADER;
     let nt_headers: *const IMAGE_NT_HEADERS64;
     let optional_header: * const IMAGE_OPTIONAL_HEADER64;
     let data_directory: *const IMAGE_DATA_DIRECTORY;
     let export_directory: *const IMAGE_EXPORT_DIRECTORY;
-    let function_address_array: UINT_PTR;
-    let mut function_name_array: UINT_PTR;
-    let mut function_ordinals_array: UINT_PTR;
+    let function_address_array: usize;
+    let mut function_name_array: usize;
+    let mut function_ordinals_array: usize;
     
     unsafe {
         dos_headers = module_handle as *const IMAGE_DOS_HEADER;
@@ -174,7 +227,7 @@ pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
             debug_error!("Invalid dos signature!");
         }
 
-        nt_headers = (module_handle as u64 + (*dos_headers).e_lfanew as u64) as *const IMAGE_NT_HEADERS64;
+        nt_headers = (module_handle as usize + (*dos_headers).e_lfanew as usize) as *const IMAGE_NT_HEADERS64;
         if (*nt_headers).Signature != IMAGE_NT_SIGNATURE {
             debug_error!("Invalid NT signature!");
         }
@@ -185,10 +238,10 @@ pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
         }
 
         data_directory = (&(*optional_header).DataDirectory[0]) as *const IMAGE_DATA_DIRECTORY;
-        export_directory = (module_handle as u64 + (*data_directory).VirtualAddress as u64) as *const IMAGE_EXPORT_DIRECTORY;
-        function_address_array = (module_handle as u64 + (*export_directory).AddressOfFunctions as u64) as UINT_PTR;
-        function_name_array = (module_handle as u64 + (*export_directory).AddressOfNames as u64) as UINT_PTR;
-        function_ordinals_array = (module_handle as u64 + (*export_directory).AddressOfNameOrdinals as u64) as UINT_PTR;
+        export_directory = (module_handle as usize + (*data_directory).VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
+        function_address_array = (module_handle as usize + (*export_directory).AddressOfFunctions as usize) as usize;
+        function_name_array = (module_handle as usize + (*export_directory).AddressOfNames as usize) as usize;
+        function_ordinals_array = (module_handle as usize + (*export_directory).AddressOfNameOrdinals as usize) as usize;
         
         //debug_info!((*export_directory).NumberOfFunctions);
         for _ in 1..(*export_directory).NumberOfFunctions {
@@ -199,8 +252,8 @@ pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
             ).to_str().unwrap();
             
             let fun_ord = *(function_ordinals_array as *const u16);
-            let address_ptr = function_address_array + fun_ord as u64 * (std::mem::size_of::<u32>() as u64);
-            let fun_addr = module_handle as u64 + *(address_ptr as *const u32) as u64;
+            let address_ptr = function_address_array + fun_ord as usize * (std::mem::size_of::<u32>() as usize);
+            let fun_addr = module_handle as usize + *(address_ptr as *const u32) as usize;
             //debug_info!(fun_name);
             //debug_info!(fun_ord);
             //debug_info!(fun_addr); 
@@ -209,8 +262,70 @@ pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
                 return fun_addr;
             }
 
-            function_name_array = function_name_array + std::mem::size_of::<u32>() as u64;
-            function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as u64;
+            function_name_array = function_name_array + std::mem::size_of::<u32>() as usize;
+            function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as usize;
+        }
+        return 0;
+    }
+}
+
+#[allow(dead_code)]
+#[cfg(target_arch = "x86")]
+#[allow(dead_code)]
+#[cfg(target_arch = "x86_64")]
+pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> usize {
+    let dos_headers: *const IMAGE_DOS_HEADER;
+    let nt_headers: *const IMAGE_NT_HEADERS32;
+    let optional_header: * const IMAGE_OPTIONAL_HEADER32;
+    let data_directory: *const IMAGE_DATA_DIRECTORY;
+    let export_directory: *const IMAGE_EXPORT_DIRECTORY;
+    let function_address_array: usize;
+    let mut function_name_array: usize;
+    let mut function_ordinals_array: usize;
+    
+    unsafe {
+        dos_headers = module_handle as *const IMAGE_DOS_HEADER;
+        if (*dos_headers).e_magic != IMAGE_DOS_SIGNATURE {
+            debug_error!("Invalid dos signature!");
+        }
+
+        nt_headers = (module_handle as usize + (*dos_headers).e_lfanew as usize) as *const IMAGE_NT_HEADERS32;
+        if (*nt_headers).Signature != IMAGE_NT_SIGNATURE {
+            debug_error!("Invalid NT signature!");
+        }
+
+        optional_header	= &(*nt_headers).OptionalHeader;
+        if (*optional_header).Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC {
+            debug_error!("Invalid Optional Header signature!");
+        }
+
+        data_directory = (&(*optional_header).DataDirectory[0]) as *const IMAGE_DATA_DIRECTORY;
+        export_directory = (module_handle as usize + (*data_directory).VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
+        function_address_array = (module_handle as usize + (*export_directory).AddressOfFunctions as usize) as usize;
+        function_name_array = (module_handle as usize + (*export_directory).AddressOfNames as usize) as usize;
+        function_ordinals_array = (module_handle as usize + (*export_directory).AddressOfNameOrdinals as usize) as usize;
+        
+        //debug_info!((*export_directory).NumberOfFunctions);
+        for _ in 1..(*export_directory).NumberOfFunctions {
+            let name_offest: u32 = *(function_name_array as *const u32);
+
+            let fun_name = std::ffi::CStr::from_ptr(
+                (module_handle as usize + name_offest as usize) as *const i8
+            ).to_str().unwrap();
+            
+            let fun_ord = *(function_ordinals_array as *const u16);
+            let address_ptr = function_address_array + fun_ord as usize * (std::mem::size_of::<u32>() as usize);
+            let fun_addr = module_handle as usize + *(address_ptr as *const u32) as usize;
+            //debug_info!(fun_name);
+            //debug_info!(fun_ord);
+            //debug_info!(fun_addr); 
+
+            if fun_name.to_lowercase() == function_name.to_lowercase() {
+                return fun_addr;
+            }
+
+            function_name_array = function_name_array + std::mem::size_of::<u32>() as usize;
+            function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as usize;
         }
         return 0;
     }
@@ -221,7 +336,10 @@ pub fn get_loaded_dlls() -> Vec<String> {
     unsafe {
         let mut dlls: Vec<String> = vec!();
 
-        let peb_offset: *const u64 = __readgsqword(0x60)  as *const u64;
+        #[cfg(target_arch = "x86_64")]
+        let peb_offset: *const usize = __readgsqword(0x60)  as *const usize;
+        #[cfg(target_arch = "x86")]
+        let peb_offset: *const usize = __readfsdword(0x30)  as *const usize;
         debug_info!(peb_offset);
         let rf_peb: *const PEB = peb_offset as * const PEB;
         let peb = *rf_peb;
@@ -246,6 +364,7 @@ pub fn get_loaded_dlls() -> Vec<String> {
 }
 
 #[allow(dead_code)]
+#[cfg(target_arch = "x86_64")]
 pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> {
     let mut functions: Vec<FunctionInfo> = vec!();
  
@@ -254,9 +373,9 @@ pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> 
     let optional_header: * const IMAGE_OPTIONAL_HEADER64;
     let data_directory: *const IMAGE_DATA_DIRECTORY;
     let export_directory: *const IMAGE_EXPORT_DIRECTORY;
-    let function_address_array: UINT_PTR;
-    let mut function_name_array: UINT_PTR;
-    let mut function_ordinals_array: UINT_PTR;
+    let function_address_array: usize;
+    let mut function_name_array: usize;
+    let mut function_ordinals_array: usize;
     
     unsafe {
         dos_headers = module_handle as *const IMAGE_DOS_HEADER;
@@ -275,10 +394,10 @@ pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> 
         }
 
         data_directory = (&(*optional_header).DataDirectory[0]) as *const IMAGE_DATA_DIRECTORY;
-        export_directory = (module_handle as u64 + (*data_directory).VirtualAddress as u64) as *const IMAGE_EXPORT_DIRECTORY;
-        function_address_array = (module_handle as u64 + (*export_directory).AddressOfFunctions as u64) as UINT_PTR;
-        function_name_array = (module_handle as u64 + (*export_directory).AddressOfNames as u64) as UINT_PTR;
-        function_ordinals_array = (module_handle as u64 + (*export_directory).AddressOfNameOrdinals as u64) as UINT_PTR;
+        export_directory = (module_handle as usize + (*data_directory).VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
+        function_address_array = (module_handle as usize + (*export_directory).AddressOfFunctions as usize) as usize;
+        function_name_array = (module_handle as usize + (*export_directory).AddressOfNames as usize) as usize;
+        function_ordinals_array = (module_handle as usize + (*export_directory).AddressOfNameOrdinals as usize) as usize;
         
         //debug_info!((*export_directory).NumberOfFunctions);
         for _ in 1..(*export_directory).NumberOfFunctions {
@@ -289,14 +408,91 @@ pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> 
             ).to_str().unwrap();
             
             let fun_ord = *(function_ordinals_array as *const u16);
-            let address_ptr = function_address_array + fun_ord as u64 * (std::mem::size_of::<u32>() as u64);
+            let address_ptr = function_address_array + fun_ord as usize * (std::mem::size_of::<u32>() as usize);
             let fun_addr = module_handle as usize + *(address_ptr as *const u32) as usize;
             //debug_info!(fun_name);
             //debug_info!(fun_ord);
             //debug_info!(fun_addr); 
 
-            function_name_array = function_name_array + std::mem::size_of::<u32>() as u64;
-            function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as u64;
+            function_name_array = function_name_array + std::mem::size_of::<u32>() as usize;
+            function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as usize;
+
+            functions.push(FunctionInfo::new(String::from(fun_name), fun_addr, fun_ord));
+        }
+ 
+    }
+
+    Ok(functions)
+}
+
+#[allow(dead_code)]
+#[cfg(target_arch = "x86")]
+pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> {
+    let mut functions: Vec<FunctionInfo> = vec!();
+ 
+    let dos_headers: *const IMAGE_DOS_HEADER;
+    let nt_headers: *const IMAGE_NT_HEADERS32;
+    let optional_header: * const IMAGE_OPTIONAL_HEADER32;
+    let data_directory: *const IMAGE_DATA_DIRECTORY;
+    let export_directory: *const IMAGE_EXPORT_DIRECTORY;
+    let function_address_array: usize;
+    let mut function_name_array: usize;
+    let mut function_ordinals_array: usize;
+    
+    unsafe {
+        dos_headers = module_handle as *const IMAGE_DOS_HEADER;
+        if (*dos_headers).e_magic != IMAGE_DOS_SIGNATURE {
+            return Err(Box::from("Invalid dos signature!"));
+        }
+
+        nt_headers = (module_handle as u32 + (*dos_headers).e_lfanew as u32) as *const IMAGE_NT_HEADERS32;
+        if (*nt_headers).Signature != IMAGE_NT_SIGNATURE {
+            return Err(Box::from("Invalid NT signature!"));
+        }
+
+        optional_header	= &(*nt_headers).OptionalHeader;
+        if (*optional_header).Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC {
+            return Err(Box::from("Invalid Optional Header signature!"));
+        }
+
+        data_directory = (&(*optional_header).DataDirectory[0]) as *const IMAGE_DATA_DIRECTORY;
+        export_directory = (module_handle as usize + (*data_directory).VirtualAddress as usize) as *const IMAGE_EXPORT_DIRECTORY;
+        function_address_array = (module_handle as usize + (*export_directory).AddressOfFunctions as usize) as usize;
+        function_name_array = (module_handle as usize + (*export_directory).AddressOfNames as usize) as usize;
+        function_ordinals_array = (module_handle as usize + (*export_directory).AddressOfNameOrdinals as usize) as usize;
+        
+        debug_info!((*export_directory).NumberOfFunctions);
+        debug_info_hex!(module_handle);
+        for index in 1..(*export_directory).NumberOfFunctions {
+            let name_offest: u32 = *(function_name_array as *const u32);
+
+            let fun_name = std::ffi::CStr::from_ptr(
+                (module_handle as u64 + name_offest as u64) as *const i8
+            ).to_str().unwrap();
+            
+            
+            let fun_ord = *(function_ordinals_array as *const u16);
+            let address_ptr = function_address_array + fun_ord as usize * (std::mem::size_of::<u32>() as usize);
+            let fun_addr = module_handle as usize + *(address_ptr as *const u32) as usize;
+            //debug_info!(fun_name);
+            //debug_info!(fun_ord);
+            //debug_info_hex!(fun_addr); 
+            // if fun_name == "NtAllocateVirtualMemory" {
+            //     debug_info!(fun_name);
+            //     debug_info!(fun_ord);
+            //     debug_info_hex!(fun_addr); 
+            //     debug_info_hex!((*export_directory).AddressOfFunctions as usize);
+            //     debug_info_hex!(((*export_directory).AddressOfFunctions as usize) + 0x77300000); 
+            // }
+
+            // if fun_name == "NtAllocateVirtualMemory" {
+            //     debug_info_msg!(format!("{}-[{}] : {} #{} [{}] ", module_handle, ((*export_directory).AddressOfFunctions as usize), fun_name,  fun_ord, fun_addr));
+            // }
+
+            if index < (*export_directory).NumberOfFunctions-10 {
+                function_name_array = function_name_array + std::mem::size_of::<u32>() as usize;
+                function_ordinals_array = function_ordinals_array + std::mem::size_of::<u16>() as usize;
+            }
 
             functions.push(FunctionInfo::new(String::from(fun_name), fun_addr, fun_ord));
         }

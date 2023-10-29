@@ -11,11 +11,10 @@ use std::os::raw::c_ulong;
 pub type DWORD = c_ulong;
 #[allow(non_camel_case_types)]
 pub type __uint64 = u64;
+#[cfg(target_arch = "x86_64")]
 pub type DWORD64 = __uint64;
 //pub type ULONGLONG = c_ulonglong;
 pub type HINSTANCE = isize;
-#[allow(non_camel_case_types)]
-pub type UINT_PTR = __uint64;
 //pub type PVOID = *mut ::core::ffi::c_void;
 pub type HANDLE = isize;
 

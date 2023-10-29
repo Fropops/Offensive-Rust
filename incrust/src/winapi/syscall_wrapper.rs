@@ -50,7 +50,7 @@ impl SyscallWrapper {
                 addr,
                 process_handle,
                 base_address,
-                &mut 0u64,
+                0usize,
                 region_size,
                 allocation_type,
                 protect
@@ -61,14 +61,18 @@ impl SyscallWrapper {
     #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
     #[allow(dead_code)]
     pub fn nt_allocate_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, region_size: &mut usize, allocation_type: u32, protect: u32) -> i32 {
+        use crate::{debug_info, debug_base};
+
         let func_name = lc!("NtAllocateVirtualMemory");
         let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+
+        debug_info!(ssn);
         unsafe {
                 syscall!(
                 ssn,
                 process_handle,
                 base_address,
-                &mut 0u64,
+                0usize,
                 region_size,
                 allocation_type,
                 protect
@@ -85,9 +89,13 @@ impl SyscallWrapper {
     #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_protect_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, number_of_bytes_to_protect: &mut usize, new_access_portection: u32, old_access_protection: &mut u32) -> i32 {
+        use crate::{debug_info, debug_base, debug_base_hex, debug_info_hex};
+
         let func_name = lc!("NtProtectVirtualMemory");
         let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
         let addr = self.resolver.get_random_syscall_addr().unwrap();
+        debug_info!(ssn);
+        debug_info_hex!(addr);
         unsafe {
                 syscall!(
                 ssn,
@@ -251,11 +259,15 @@ impl SyscallWrapper {
     #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
     #[allow(dead_code)]
     pub fn nt_open_process(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
+        use crate::{debug_info, debug_base};
+
         let func_name = lc!("NtOpenProcess");
         let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let mut oa = OBJECT_ATTRIBUTES::default();
-
-        let mut ci = CLIENT_ID {
+        let oa = OBJECT_ATTRIBUTES::default();
+        debug_info!(func_name);
+        debug_info!(process_id);
+        debug_info!(ssn);
+        let ci = CLIENT_ID {
             UniqueProcess: process_id as HANDLE,
             UniqueThread: 0,
         };
@@ -265,8 +277,8 @@ impl SyscallWrapper {
                 ssn,
                 process_handle,
                 desired_access,
-                &mut oa,
-                &mut ci
+                &oa,
+                &ci
             )
         }
     }
@@ -434,5 +446,6 @@ impl SSNResolver {
             return Err(Box::from(error_msg));
         }
         Ok(self.syscall_addresses.choose(&mut rand::thread_rng()).unwrap().clone())
+        //Ok(0x77882e0a)
     }
 }

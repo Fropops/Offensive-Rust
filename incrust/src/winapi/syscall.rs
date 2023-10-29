@@ -11,7 +11,7 @@ use std::arch::global_asm;
 macro_rules! syscall {
     ($ssn:expr, $addr:expr, $($y:expr), +) => {
         {
-        let mut cnt:u32 = 0;
+        let mut cnt:usize = 0;
         $(
             let _ = $y;
             cnt += 1;
@@ -25,7 +25,7 @@ macro_rules! syscall {
 macro_rules! syscall {
     ($ssn:expr, $($y:expr), +) => {
         {
-        let mut cnt:u32 = 0;
+        let mut cnt:usize = 0;
         $(
             let _ = $y;
             cnt += 1;
@@ -50,13 +50,13 @@ extern "C" {
 #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
 #[cfg(target_arch = "x86")]
 extern "C" {
-    pub fn do_syscall(ssn: u16, syscall_addr: usize, n_args: u32, ...) -> i32;
+    pub fn do_syscall(ssn: u16, syscall_addr: usize, n_args: usize, ...) -> i32;
 }
 
 #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
 #[cfg(target_arch = "x86_64")]
 extern "C" {
-    pub fn do_syscall(ssn: u16, syscall_addr: usize, n_args: u32, ...) -> i32;
+    pub fn do_syscall(ssn: u16, syscall_addr: usize, n_args: usize, ...) -> i32;
 }
 
 

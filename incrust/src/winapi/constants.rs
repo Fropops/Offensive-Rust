@@ -6,6 +6,7 @@ pub const IMAGE_DOS_SIGNATURE: u16 = 23117u16;
 pub const IMAGE_NT_SIGNATURE: u32 = 17744u32;
 #[allow(dead_code)]
 pub const IMAGE_NT_OPTIONAL_HDR32_MAGIC: u16 = 267u16;
+#[allow(dead_code)]
 pub const IMAGE_NT_OPTIONAL_HDR64_MAGIC: u16 = 523u16;
 
 #[allow(dead_code)]
