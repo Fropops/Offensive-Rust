@@ -38,38 +38,14 @@ impl SyscallWrapper {
     //     IN ULONG            AllocationType,   // MEM_COMMIT | MEM_RESERVE
     //     IN ULONG            Protect           // Page protection 
     //   );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_allocate_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, region_size: &mut usize, allocation_type: u32, protect: u32) -> i32 {
         let func_name = lc!("NtAllocateVirtualMemory");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
+        
         unsafe {
                 syscall!(
-                ssn,
-                addr,
-                process_handle,
-                base_address,
-                0usize,
-                region_size,
-                allocation_type,
-                protect
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_allocate_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, region_size: &mut usize, allocation_type: u32, protect: u32) -> i32 {
-        use crate::{debug_info, debug_base};
-
-        let func_name = lc!("NtAllocateVirtualMemory");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-
-        debug_info!(ssn);
-        unsafe {
-                syscall!(
-                ssn,
+                self,
+                func_name,
                 process_handle,
                 base_address,
                 0usize,
@@ -86,37 +62,13 @@ impl SyscallWrapper {
     //     IN OUT PULONG           NumberOfBytesToProtect,
     //     IN ULONG                NewAccessProtection,
     //     OUT PULONG              OldAccessProtection );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
-    #[allow(dead_code)]
-    pub fn nt_protect_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, number_of_bytes_to_protect: &mut usize, new_access_portection: u32, old_access_protection: &mut u32) -> i32 {
-        use crate::{debug_info, debug_base, debug_base_hex, debug_info_hex};
-
-        let func_name = lc!("NtProtectVirtualMemory");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
-        debug_info!(ssn);
-        debug_info_hex!(addr);
-        unsafe {
-                syscall!(
-                ssn,
-                addr,
-                process_handle,
-                base_address,
-                number_of_bytes_to_protect,
-                new_access_portection,
-                old_access_protection
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
     #[allow(dead_code)]
     pub fn nt_protect_virtual_memory(&self, process_handle: HANDLE, base_address: &mut usize, number_of_bytes_to_protect: &mut usize, new_access_portection: u32, old_access_protection: &mut u32) -> i32 {
         let func_name = lc!("NtProtectVirtualMemory");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
         unsafe {
                 syscall!(
-                ssn,
+                self,
+                func_name,
                 process_handle,
                 base_address,
                 number_of_bytes_to_protect,
@@ -133,33 +85,13 @@ impl SyscallWrapper {
     //     IN ULONG                NumberOfBytesToWrite,   // Number of bytes to be written
     //     OUT PULONG              NumberOfBytesWritten    // Pointer to a variable that receives the number of bytes actually written 
     //   );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_write_virtual_memory(&self, process_handle: HANDLE, base_address: usize, buffer: usize, number_of_bytes_to_write: usize, number_of_bytes_written: &mut usize) -> i32 {
         let func_name = lc!("NtWriteVirtualMemory");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
         unsafe {
                 syscall!(
-                ssn,
-                addr,
-                process_handle,
-                base_address,
-                buffer,
-                number_of_bytes_to_write,
-                number_of_bytes_written
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_write_virtual_memory(&self, process_handle: HANDLE, base_address: usize, buffer: usize, number_of_bytes_to_write: usize, number_of_bytes_written: &mut usize) -> i32 {
-        let func_name = lc!("NtWriteVirtualMemory");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        unsafe {
-                syscall!(
-                ssn,
+                self,
+                func_name,
                 process_handle,
                 base_address,
                 buffer,
@@ -182,16 +114,13 @@ impl SyscallWrapper {
     //     IN 	SIZE_T                  MaximumStackSize,     // Set to NULL
     //     IN 	PPS_ATTRIBUTE_LIST      AttributeList         // Pointer to PS_ATTRIBUTE_LIST structure (set to NULL)
     // );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_create_thread_ex(&self, thread_handle: &mut HANDLE, desired_access: u32, process_handle: HANDLE, start_routine: usize) -> i32 {
         let func_name = lc!("NtCreateThreadEx");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
         unsafe {
                 syscall!(
-                ssn,
-                addr,
+                self,
+                func_name,
                 thread_handle,
                 desired_access,
                 0usize,
@@ -207,66 +136,18 @@ impl SyscallWrapper {
         }
     }
 
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_create_thread_ex(&self, thread_handle: &mut HANDLE, desired_access: u32, process_handle: HANDLE, start_routine: usize) -> i32 {
-        let func_name = lc!("NtCreateThreadEx");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        unsafe {
-                syscall!(
-                ssn,
-                thread_handle,
-                desired_access,
-                0usize,
-                process_handle,
-                start_routine,
-                0usize,
-                0u32,
-                0usize,
-                0usize,
-                0usize,
-                0usize
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
+    //NTSTATUS NtOpenProcess(
+    //     [out]          PHANDLE            ProcessHandle,
+    //     [in]           ACCESS_MASK        DesiredAccess,
+    //     [in]           POBJECT_ATTRIBUTES ObjectAttributes,
+    //     [in, optional] PCLIENT_ID         ClientId
+    //);
     #[allow(dead_code)]
     pub fn nt_open_process(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
         let func_name = lc!("NtOpenProcess");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
-
-        let mut oa = OBJECT_ATTRIBUTES::default();
-
-        let mut ci = CLIENT_ID {
-            UniqueProcess: process_id as HANDLE,
-            UniqueThread: 0,
-        };
-
-        unsafe {
-            syscall!(
-                ssn,
-                addr,
-                process_handle,
-                desired_access,
-                &mut oa,
-                &mut ci
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_open_process(&self, process_handle: &mut HANDLE, desired_access :u32, process_id: isize) -> i32 {
-        use crate::{debug_info, debug_base};
-
-        let func_name = lc!("NtOpenProcess");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
+        
         let oa = OBJECT_ATTRIBUTES::default();
-        debug_info!(func_name);
-        debug_info!(process_id);
-        debug_info!(ssn);
+
         let ci = CLIENT_ID {
             UniqueProcess: process_id as HANDLE,
             UniqueThread: 0,
@@ -274,7 +155,8 @@ impl SyscallWrapper {
 
         unsafe {
             syscall!(
-                ssn,
+                self,
+                func_name,
                 process_handle,
                 desired_access,
                 &oa,
@@ -288,32 +170,13 @@ impl SyscallWrapper {
     //     [in] BOOLEAN        Alertable,
     //     [in] PLARGE_INTEGER Timeout
     //   );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_wait_for_single_object(&self, handle: HANDLE) -> i32 {
         let func_name = lc!("NtWaitForSingleObject");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
-
         unsafe {
             syscall!(
-                ssn,
-                addr,
-                handle,
-                0usize,
-                0usize
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_wait_for_single_object(&self, handle: HANDLE) -> i32 {
-        let func_name = lc!("NtWaitForSingleObject");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        unsafe {
-            syscall!(
-                ssn,
+                self,
+                func_name,
                 handle,
                 0usize,
                 0usize
@@ -324,30 +187,13 @@ impl SyscallWrapper {
     // NTSTATUS NtClose(
     //     [in] HANDLE Handle
     //   );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_close(&self, handle: HANDLE) -> i32 {
         let func_name = lc!("NtClose");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
-
         unsafe {
             syscall!(
-                ssn,
-                addr,
-                handle
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_close(&self, handle: HANDLE) -> i32 {
-        let func_name = lc!("NtClose");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        unsafe {
-            syscall!(
-                ssn,
+                self,
+                func_name,
                 handle
             )
         }
@@ -359,33 +205,13 @@ impl SyscallWrapper {
     //     [in]            ULONG                    SystemInformationLength,
     //     [out, optional] PULONG                   ReturnLength
     //   );
-    #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
     #[allow(dead_code)]
     pub fn nt_query_system_information(&self, system_information_class: i32, system_information: *mut u8, system_information_length: u32, return_length: *mut u32) -> i32 {
         let func_name = lc!("NtQuerySystemInformation");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        let addr = self.resolver.get_random_syscall_addr().unwrap();
-
         unsafe {
             syscall!(
-                ssn,
-                addr,
-                system_information_class,
-                system_information,
-                system_information_length,
-                return_length
-            )
-        }
-    }
-
-    #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
-    #[allow(dead_code)]
-    pub fn nt_query_system_information(&self, system_information_class: i32, system_information: *mut u8, system_information_length: u32, return_length: *mut u32) -> i32 {
-        let func_name = lc!("NtQuerySystemInformation");
-        let ssn = self.resolver.retrieve_ssn(func_name.as_str()).unwrap();
-        unsafe {
-            syscall!(
-                ssn,
+                self,
+                func_name,
                 system_information_class,
                 system_information,
                 system_information_length,

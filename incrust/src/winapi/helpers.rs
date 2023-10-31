@@ -94,6 +94,7 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
             //debug_info!(&func.name);
             //debug_info_msg!(format!("{:#x}", func.address));
             func.hooked = true;
+
             for byte_index in 0..func.size()-1 {
                 let look_start_address = func.address + (byte_index as usize);
 
@@ -125,6 +126,7 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                         func.hooked = false;
                     }
                 
+                
                 //look for syscall address
                 #[cfg(target_arch = "x86_64")]
                 if *(look_start_address as  *const u8) == 0x0F 
@@ -134,13 +136,19 @@ pub fn load_nt_syscall_info() -> Result<Vec<FunctionInfo>> {
                         func.syscall_address = Some(look_start_address);
                     }
 
+
+                
                 #[cfg(target_arch = "x86")]
-                if *(look_start_address as  *const u8) == 0xFF 
-                && *((look_start_address + 1) as  *const u8) == 0x12
                 {
-                    func.syscall_address = Some(look_start_address);
-                    //debug_info_msg!(format!("jump {:#x}", look_start_address));
-                }
+                    //debug_info_msg!(format!("{:#x} {:#x}", *(look_start_address as  *const u8), *((look_start_address + 1) as  *const u8)));
+                    if *(look_start_address as  *const u8) == 0xFF 
+                    && (*((look_start_address + 1) as  *const u8) == 0x12 || *((look_start_address + 1) as  *const u8) == 0xD2)
+                    && (*((look_start_address + 2) as  *const u8) == 0xC3) //looking for ret alone if it's 0xC2, it changes the stack frame and then crashes the app
+                    {
+                        func.syscall_address = Some(look_start_address);
+                        //debug_info_msg!(format!("jump {:#x}", look_start_address));
+                    }
+                }   
 
             }
         }

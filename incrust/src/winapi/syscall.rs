@@ -1,36 +1,43 @@
-//
+// Adapted from
 // Credits: Yxel / janoglezcampos / @httpyxel (https://github.com/janoglezcampos/rust_syscalls/blob/main/src/syscall.rs)
 //
 
 #[allow(unused_imports)]
 use std::arch::global_asm;
 
-
 #[cfg(all(feature = "syscall_indirect", not(feature = "syscall_direct")))]
 #[macro_export]
 macro_rules! syscall {
-    ($ssn:expr, $addr:expr, $($y:expr), +) => {
+    ($ntdll:expr, $func_name:expr, $($y:expr), +) => {
         {
+            let ssn = $ntdll.resolver.retrieve_ssn($func_name.as_str()).unwrap();
+            let addr = $ntdll.resolver.get_random_syscall_addr().unwrap();
+            // println!("{:#x}",ssn);
+            // println!("{:#x}", addr);
         let mut cnt:usize = 0;
         $(
             let _ = $y;
             cnt += 1;
         )+
-        crate::winapi::syscall::do_syscall($ssn, $addr, cnt, $($y), +)
+        crate::winapi::syscall::do_syscall(ssn, addr, cnt, $($y), +)
     }}
 }
+
+
 
 #[cfg(all(feature = "syscall_direct", not(feature = "syscall_indirect")))]
 #[macro_export]
 macro_rules! syscall {
-    ($ssn:expr, $($y:expr), +) => {
+    ($ntdll:expr, $func_name:expr, $($y:expr), +) => {
         {
+            let ssn = $ntdll.resolver.retrieve_ssn($func_name.as_str()).unwrap();
+            debug_info(ssn);
         let mut cnt:usize = 0;
         $(
             let _ = $y;
             cnt += 1;
         )+
-        crate::winapi::syscall::do_syscall($ssn, cnt, $($y), +)
+        crate::winapi::syscall::do_syscall(ssn, cnt, $($y), +)
     }}
 }
 
@@ -191,47 +198,31 @@ global_asm!("
 .section .text
 
 _do_syscall:
-    mov ecx, [esp + 0x0C]
-    not ecx
-    add ecx, 1
-    lea edx, [esp + ecx * 4]
+    mov [esp - 0x04], esi //backup esi
+    mov [esp - 0x08], edi //backup edi
 
-    mov ecx, [esp]
-    mov [edx], ecx
+    mov eax, [esp + 0x04] //copy param 1 in eax = ssn
+    mov ebx, [esp + 0x08] //copy param 2 in ebx = addr
+    mov ecx, [esp + 0x0C] //copy param 3 in ecx = nb of real parameters
 
-    mov [edx - 0x04], esi
-    mov [edx - 0x08], edi
+    lea esi, [esp + 0x10] //set esi on the adress of th 1st real param
+    lea edi, [esp + 0x04] //set edi on the addres of the 1st param (ssn)
 
-    mov eax, [esp + 0x04]
-    mov ecx, [esp + 0x0C]
+    rep movsd             //recurse copy => shift params on stack for n params (n is ecx)
 
-    lea esi, [esp + 0x10]
-    lea edi, [edx + 0x04]
+    mov esi, [esp - 0x04] //restore esi
+    mov edi, [esp - 0x08] //restore edi
 
-    rep movsd
-
-    mov esi, [edx - 0x04]
-    mov edi, [edx - 0x08]
-    mov ecx, [esp + 0x08]
-    
-    mov esp, edx
-
-    mov edx, fs:[0xC0]
+    mov edx, fs:[0xC0]  // undocumented : void*                       WOW32Reserved;                              //0x00C0 / user-mode 32-bit (WOW64) -> 64-bit context switch function prior to kernel-mode transition (https://bytepointer.com/resources/tebpeb32.htm)
     test edx, edx
     je native
 
-    mov edx, fs:[0xC0]
-    jmp ecx
+    jmp ebx                 //jump to addr
 
 native:
-    mov edx, ecx
-    sub edx, 0x05
-    push edx
-    mov edx, esp
-    jmp ecx
-    ret
-
-is_wow64:
+    sub ebx, 0x05    // jump 5 bytecode before the call instruction => allow to get coorect edx value before call edx
+                     // got to : mov edx, <&kiFastSystemCall> => maybe we should be able to get the value when parsing syscall functions and reuse it (best for unhooking)
+    jmp ebx
 ");
 
 
