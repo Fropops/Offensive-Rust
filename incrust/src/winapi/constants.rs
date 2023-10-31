@@ -4,10 +4,15 @@ use super::types::{NT_STATUS, PROCESS_ACCESS_RIGHTS, VIRTUAL_ALLOCATION_TYPE, PA
 pub const IMAGE_NUMBEROF_DIRECTORY_ENTRIES: usize = 16;
 pub const IMAGE_DOS_SIGNATURE: u16 = 23117u16;
 pub const IMAGE_NT_SIGNATURE: u32 = 17744u32;
-#[allow(dead_code)]
-pub const IMAGE_NT_OPTIONAL_HDR32_MAGIC: u16 = 267u16;
-#[allow(dead_code)]
-pub const IMAGE_NT_OPTIONAL_HDR64_MAGIC: u16 = 523u16;
+// #[allow(dead_code)]
+// pub const IMAGE_NT_OPTIONAL_HDR32_MAGIC: u16 = 267u16;
+// #[allow(dead_code)]
+// pub const IMAGE_NT_OPTIONAL_HDR64_MAGIC: u16 = 523u16;
+
+#[cfg(target_arch = "x86_64")]
+pub const IMAGE_NT_OPTIONAL_HDR_MAGIC: u16 = 523u16;
+#[cfg(target_arch = "x86")]
+pub const IMAGE_NT_OPTIONAL_HDR_MAGIC: u16 = 267u16;
 
 #[allow(dead_code)]
 pub const PROCESS_VM_READ: PROCESS_ACCESS_RIGHTS = 16u32;

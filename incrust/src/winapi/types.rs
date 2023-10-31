@@ -225,3 +225,25 @@ impl PCSTR {
     //     Decode(move || decode_utf8(self.as_bytes()))
     // }
 }
+
+#[cfg(target_arch = "x86_64")]
+use super::structs::IMAGE_NT_HEADERS64;
+#[cfg(target_arch = "x86_64")]
+use super::structs::IMAGE_OPTIONAL_HEADER64;
+#[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86_64")]
+pub type IMAGE_NT_HEADERS = IMAGE_NT_HEADERS64;
+#[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86_64")]
+pub type IMAGE_OPTIONAL_HEADER = IMAGE_OPTIONAL_HEADER64;
+
+#[cfg(target_arch = "x86")]
+use super::structs::IMAGE_NT_HEADERS32;
+#[cfg(target_arch = "x86")]
+use super::structs::IMAGE_OPTIONAL_HEADER32;
+#[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86")]
+pub type IMAGE_NT_HEADERS = IMAGE_NT_HEADERS32;
+#[allow(non_camel_case_types)]
+#[cfg(target_arch = "x86")]
+pub type IMAGE_OPTIONAL_HEADER = IMAGE_OPTIONAL_HEADER32;
