@@ -1,6 +1,10 @@
-incRUST, a rust loader !
+incRUST, a rust loader using direct ot indirect syscalls !
 
-# Payload Tes generation
+
+(!) indirect syscall in x86 could be not working on some systems becausz of different syscall stubs (https://gist.github.com/wbenny/b08ef73b35782a1f57069dff2327ee4d)
+
+
+# Payload Test generation
 ## x86
 msfvenom -f bin -p windows/exec cmd=calc exitfunc=thread -f base64 -o payload-x86.b64
 
