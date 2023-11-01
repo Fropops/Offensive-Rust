@@ -31,7 +31,7 @@ macro_rules! syscall {
     ($ntdll:expr, $func_name:expr, $($y:expr), +) => {
         {
             let ssn = $ntdll.resolver.retrieve_ssn($func_name.as_str()).unwrap();
-            debug_info(ssn);
+            //debug_info(ssn);
         let mut cnt:usize = 0;
         $(
             let _ = $y;
