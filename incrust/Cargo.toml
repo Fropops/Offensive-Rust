@@ -20,7 +20,7 @@ litcrypt = "0.3.0"
 rand = "0.8.5"
 
 [features]
-#default = ["payload_bin", "inject_self", "syscall_indirect"]
+#default = ["payload_b64", "inject_self", "syscall_indirect"]
 no_console = []
 regsvr = []
 xll = []
