@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "clr2"
+name = "clr-from-file"
 version = "0.1.0"
 dependencies = [
  "windows",

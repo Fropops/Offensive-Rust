@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'clr2'",
+            "name": "Debug executable 'clr-from-file'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=clr2",
-                    "--package=clr2"
+                    "--bin=clr-from-file",
+                    "--package=clr-from-file"
                 ],
                 "filter": {
-                    "name": "clr2",
+                    "name": "clr-from-file",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'clr2'",
+            "name": "Debug unit tests in executable 'clr-from-file'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=clr2",
-                    "--package=clr2"
+                    "--bin=clr-from-file",
+                    "--package=clr-from-file"
                 ],
                 "filter": {
-                    "name": "clr2",
+                    "name": "clr-from-file",
                     "kind": "bin"
                 }
             },
