@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'incrust'",
+            "name": "Debug executable 'self-delete'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=incrust",
-                    "--package=incrust"
+                    "--bin=self-delete",
+                    "--package=self-delete"
                 ],
                 "filter": {
-                    "name": "incrust",
+                    "name": "self-delete",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'incrust'",
+            "name": "Debug unit tests in executable 'self-delete'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=incrust",
-                    "--package=incrust"
+                    "--bin=self-delete",
+                    "--package=self-delete"
                 ],
                 "filter": {
-                    "name": "incrust",
+                    "name": "self-delete",
                     "kind": "bin"
                 }
             },

@@ -256,6 +256,7 @@ impl ::core::default::Default for OBJECT_ATTRIBUTES {
 #[allow(non_snake_case)]
 #[allow(non_camel_case_types)]
 #[repr(C)]
+#[allow(dead_code)]
 pub struct CLIENT_ID {
     pub UniqueProcess: HANDLE,
     pub UniqueThread: HANDLE,

@@ -51,13 +51,3 @@ pub fn get_peb() -> PEB {
         *rf_peb
     }
 }
-
-#[cfg(target_arch = "x86_64")]
-pub fn get_syscall_function_size() -> isize {
-    32
-}
-
-#[cfg(target_arch = "x86")]
-pub fn get_syscall_function_size() -> isize {
-    16
-}

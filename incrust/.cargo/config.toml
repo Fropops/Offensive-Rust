@@ -1,5 +1,0 @@
-[env]
-LITCRYPT_ENCRYPT_KEY  = { value = "testkeywillbeoverwritten", force=true }
-PROCESS_ID  = { value = "2844", force=true }
-PROCESS_NAME  = { value = "notepad.exe", force=true }
-PAYLOAD_FILE_NAME  = { value = "payload-x64.b64", force=true }
