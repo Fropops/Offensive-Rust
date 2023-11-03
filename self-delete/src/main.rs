@@ -3,7 +3,7 @@ mod winapi;
 
 
 use winapi::types::HINSTANCE;
-use winapi::helpers::get_dll_base_address;
+use winapi::dll_functions::get_dll_base_address;
 // pub type HWND = isize;
 // pub type MessageBoxA = unsafe extern "system" fn (HWND, winapi::types::PCSTR, winapi::types::PCSTR, u32) -> i32;
 // pub type LoadLibraryA = unsafe extern "system" fn (winapi::types::PCSTR) -> i32;

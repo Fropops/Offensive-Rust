@@ -1,6 +1,5 @@
-use crate::*;
+use crate::{debug_error, debug_base };
 
-use super::functions::get_peb;
 use super::structs::LDR_DATA_TABLE_ENTRY;
 use super::structs::LIST_ENTRY;
 use super::structs::IMAGE_DOS_HEADER;
@@ -12,6 +11,60 @@ use super::constants::IMAGE_DOS_SIGNATURE;
 use super::constants::IMAGE_NT_SIGNATURE;
 use super::constants::IMAGE_NT_OPTIONAL_HDR_MAGIC;
 use super::types::HINSTANCE;
+
+
+use core::arch::asm;
+use super::{types::DWORD, structs::PEB};
+
+#[cfg(target_arch = "x86_64")]
+use super::types::DWORD64;
+
+#[inline]
+#[cfg(target_arch = "x86_64")]
+pub unsafe fn __readgsqword(offset: DWORD) -> DWORD64 {
+    let out: u64;
+    asm!(
+        "mov {}, gs:[{:e}]",
+        lateout(reg) out,
+        in(reg) offset,
+        options(nostack, pure, readonly),
+    );
+    out
+}
+
+#[inline]
+#[cfg(target_arch = "x86")]
+pub unsafe fn __readfsdword(offset: DWORD) -> DWORD {
+    let out: u32;
+    asm!(
+        "mov {}, fs:[{:e}]",
+        lateout(reg) out,
+        in(reg) offset,
+        options(nostack, pure, readonly),
+    );
+    out
+}
+
+
+#[cfg(target_arch = "x86_64")]
+pub fn get_peb() -> PEB {
+    unsafe 
+    {
+        let peb_offset: *const usize = __readgsqword(0x60)  as *const usize;
+        let rf_peb: *const PEB = peb_offset as * const PEB;
+        *rf_peb
+    }
+}
+
+#[cfg(target_arch = "x86")]
+pub fn get_peb() -> PEB {
+    unsafe 
+    {
+        let peb_offset: *const usize = __readfsdword(0x30)  as *const usize;
+        let rf_peb: *const PEB = peb_offset as * const PEB;
+        *rf_peb
+    }
+}
 
 #[allow(dead_code)]
 pub fn get_dll_base_address(module_name: &str) -> HINSTANCE {
