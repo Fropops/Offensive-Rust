@@ -18,6 +18,8 @@ pub type HINSTANCE = isize;
 //pub type PVOID = *mut ::core::ffi::c_void;
 pub type HANDLE = isize;
 
+pub type BOOL = u8;
+
 #[allow(non_camel_case_types)]
 pub type NT_STATUS = i32;
 
@@ -50,6 +52,12 @@ impl PWSTR {
     /// Construct a new `PWSTR` from a raw pointer.
     pub const fn from_raw(ptr: *mut u16) -> Self {
         Self(ptr)
+    }
+
+    pub fn from_string(str: String) -> Self {
+        let mut v : Vec<u16> = str.encode_utf16().collect();
+        v.push(0);
+        Self(v.as_mut_ptr())
     }
 
     /// Construct a null `PWSTR`.

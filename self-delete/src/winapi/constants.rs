@@ -1,5 +1,5 @@
 
-use super::types::{NT_STATUS, PROCESS_ACCESS_RIGHTS, VIRTUAL_ALLOCATION_TYPE, PAGE_PROTECTION_FLAGS, THREAD_ACCESS_RIGHTS, SYSTEM_INFORMATION_CLASS};
+use super::types::{NT_STATUS, PROCESS_ACCESS_RIGHTS, VIRTUAL_ALLOCATION_TYPE, PAGE_PROTECTION_FLAGS, THREAD_ACCESS_RIGHTS, SYSTEM_INFORMATION_CLASS, HANDLE};
 
 pub const IMAGE_NUMBEROF_DIRECTORY_ENTRIES: usize = 16;
 pub const IMAGE_DOS_SIGNATURE: u16 = 23117u16;
@@ -8,6 +8,16 @@ pub const IMAGE_NT_SIGNATURE: u32 = 17744u32;
 // pub const IMAGE_NT_OPTIONAL_HDR32_MAGIC: u16 = 267u16;
 // #[allow(dead_code)]
 // pub const IMAGE_NT_OPTIONAL_HDR64_MAGIC: u16 = 523u16;
+
+#[allow(dead_code)]
+pub const NULL: usize = 0;
+#[allow(dead_code)]
+pub const TRUE: u8 = 1;
+#[allow(dead_code)]
+pub const FALSE: u8 = 0;
+
+#[allow(dead_code)]
+pub const INVALID_HANDLE_VALUE: HANDLE = -1;
 
 #[cfg(target_arch = "x86_64")]
 pub const IMAGE_NT_OPTIONAL_HDR_MAGIC: u16 = 523u16;
