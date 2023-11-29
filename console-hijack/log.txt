@@ -1,0 +1,2 @@
+This is an STDOUT msg redirected !
+This is an STDERR msg redirected !

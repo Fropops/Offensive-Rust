@@ -5,7 +5,7 @@ use std::io::Write;
 use std::mem::size_of;
 use std::{ffi::CStr, ptr::null_mut};
 
-use windows::Win32::Foundation::{HANDLE, TRUE};
+use windows::Win32::Foundation::{HANDLE, TRUE, CloseHandle};
 use windows::Win32::Security::SECURITY_ATTRIBUTES;
 use windows::Win32::Storage::FileSystem::ReadFile;
 use windows::Win32::System::Console::{SetStdHandle, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE, GetStdHandle, AllocConsole, FreeConsole};
@@ -47,7 +47,7 @@ pub fn redirect_outputs() -> i32 {
         let mut stream: PFILE = null_mut();
         if  let Err(_) = GetStdHandle(STD_OUTPUT_HANDLE) {
             /****************************************/
-            // not needed in c++ version but in rust if a console is not allocated, the stdout is not redirceted. 
+            // not needed in c++ version but in rust if a console is not allocated, the stdout is not redircted correctly. 
             // maybe it's related to https://github.com/rust-lang/rust/issues/25977 , https://github.com/rust-lang/rust/issues/9486 & https://rust-lang.github.io/rfcs/1014-stdout-existential-crisis.html
             // have to try with the pe loader...
             if let Err(_) = AllocConsole() {
@@ -68,7 +68,7 @@ pub fn redirect_outputs() -> i32 {
             
         }
 
-        //refresh the WINAPI stdout & sterr handles
+        //refresh the WINAPI stdout & stderr handles
         if let Err(_) = SetStdHandle(STD_OUTPUT_HANDLE, HANDLE(_get_osfhandle(_fileno(stdout)))) {
             return 5;
         }
@@ -86,17 +86,22 @@ pub fn redirect_outputs() -> i32 {
         };
         let security_attributes_ptr = &security_attributes as *const SECURITY_ATTRIBUTES;
 
-        CreatePipe(&mut READ_PIPE_HANDLE, &mut WRITE_PIPE_HANDLE, Some(security_attributes_ptr), 0).unwrap();
-
-        // Attach stdout & stderr to the write end of the pipe
-        let f: PFILE= _fdopen(_open_osfhandle(WRITE_PIPE_HANDLE.0 as usize, _O_TEXT), CStr::from_bytes_with_nul(b"w\0").unwrap().as_ptr());
-       
-        if _dup2(_fileno(f), _fileno(stdout)) != 0 {
+        if let Err(_) = CreatePipe(&mut READ_PIPE_HANDLE, &mut WRITE_PIPE_HANDLE, Some(security_attributes_ptr), 0) {
             return 7;
         }
 
-        if _dup2(_fileno(f), _fileno(stderr)) != 0  {
+        // Attach stdout & stderr to the write end of the pipe
+        let f: PFILE= _fdopen(_open_osfhandle(WRITE_PIPE_HANDLE.0 as usize, _O_TEXT), CStr::from_bytes_with_nul(b"w\0").unwrap().as_ptr());
+        if f == null_mut() {
             return 8;
+        }
+
+        if _dup2(_fileno(f), _fileno(stdout)) != 0 {
+            return 9;
+        }
+
+        if _dup2(_fileno(f), _fileno(stderr)) != 0  {
+            return 10;
         }
 
         0
@@ -155,6 +160,11 @@ fn main() {
     }
     
     revert_outputs();
+
+    unsafe {
+        let _ = CloseHandle(READ_PIPE_HANDLE);
+        let _ = CloseHandle(WRITE_PIPE_HANDLE);
+    }
 
     println!("Back in the console (if existing)!");
 }
