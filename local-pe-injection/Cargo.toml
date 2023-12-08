@@ -1,0 +1,30 @@
+[package]
+name = "local-pe-injection"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base64 = "0.21.5"
+litcrypt = "0.3.0"
+rand = "0.8.5"
+
+[features]
+default = ["payload_bin", "syscall_indirect"]
+no_console = []
+verbose = []
+#syscall types
+syscall_direct = []
+syscall_indirect = []
+#payload type
+payload_b64 = []
+payload_bin = []
+
+[profile.release]
+strip = true  # Automatically strip symbols from the binary.
+#opt-level = "z"  # Optimize for size. 
+opt-level = 1 # more optimizations breaks x86 indirect syscall
+lto = true
+#codegen-units = 1 # enable this breaks x86 indirect syscall
+panic = "abort"

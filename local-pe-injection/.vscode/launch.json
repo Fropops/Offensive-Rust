@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'local-pe-injection'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=local-pe-injection",
+                    "--package=local-pe-injection"
+                ],
+                "filter": {
+                    "name": "local-pe-injection",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'local-pe-injection'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=local-pe-injection",
+                    "--package=local-pe-injection"
+                ],
+                "filter": {
+                    "name": "local-pe-injection",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+[env]
+LITCRYPT_ENCRYPT_KEY  = { value = "testkeywillbeoverwritten", force=true }
+PAYLOAD_FILE_NAME  = { value = "e:\\share\\Utils\\Win\\Programs\\mimikatz64.exe", force=true }
+PAYLOAD_ARGUMENTS  = { value = "coffee exit", force=true }
