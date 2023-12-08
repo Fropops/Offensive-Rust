@@ -170,7 +170,7 @@ pub fn get_proc_address(module_handle: HINSTANCE, function_name: &str) -> u64 {
         function_ordinals_array = (module_handle as u64 + (*export_directory).AddressOfNameOrdinals as u64) as UINT_PTR;
         
         //debug_info!((*export_directory).NumberOfFunctions);
-        for _ in 1..(*export_directory).NumberOfFunctions {
+        for _ in 1..(*export_directory).NumberOfNames {
             let name_offest: u32 = *(function_name_array as *const u32);
 
             let fun_name = std::ffi::CStr::from_ptr(
@@ -258,7 +258,7 @@ pub fn get_dll_functions(module_handle: HINSTANCE) -> Result<Vec<FunctionInfo>> 
         function_ordinals_array = (module_handle as u64 + (*export_directory).AddressOfNameOrdinals as u64) as UINT_PTR;
         
         //debug_info!((*export_directory).NumberOfFunctions);
-        for _ in 1..(*export_directory).NumberOfFunctions {
+        for _ in 1..(*export_directory).NumberOfNames {
             let name_offest: u32 = *(function_name_array as *const u32);
 
             let fun_name = std::ffi::CStr::from_ptr(
